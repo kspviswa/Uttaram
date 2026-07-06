@@ -193,11 +193,10 @@ class OpenAILLM extends BaseLLM<OpenAIConfig> {
       }
     }
   }
-
   async generateObject<T>(input: GenerateObjectInput): Promise<T> {
     let rawContent = '';
 
-    try {
+    const tryWithFormat = async (): Promise<string> => {
       const response = await this.openAIClient.chat.completions.create({
         messages: this.convertToOpenAIMessages(input.messages),
         model: this.config.model,
@@ -211,7 +210,8 @@ class OpenAILLM extends BaseLLM<OpenAIConfig> {
           input.options?.frequencyPenalty ??
           this.config.options?.frequencyPenalty,
         presence_penalty:
-          input.options?.presencePenalty ?? this.config.options?.presencePenalty,
+          input.options?.presencePenalty ??
+          this.config.options?.presencePenalty,
         response_format: zodResponseFormat(input.schema, 'object'),
       });
 
@@ -219,12 +219,53 @@ class OpenAILLM extends BaseLLM<OpenAIConfig> {
         throw new Error('No response from OpenAI');
       }
 
-      rawContent = response.choices[0].message.content || '';
+      return response.choices[0].message.content || '';
+    };
+
+    try {
+      rawContent = await tryWithFormat();
     } catch (err) {
       throw new Error(`Error generating object from OpenAI: ${err}`);
     }
 
     if (!rawContent.trim()) {
+      console.warn(`[OpenAI generateObject] Empty response with structured output format, retrying without format (model: ${this.config.model})`);
+      try {
+        const messages = this.convertToOpenAIMessages(input.messages);
+        const schemaDescription = JSON.stringify(z.toJSONSchema ? z.toJSONSchema(input.schema) : input.schema, null, 2);
+        const jsonInstruction = {
+          role: 'system' as const,
+          content: `You must respond with valid JSON matching this schema:\n${schemaDescription}\n\nDo not wrap in markdown code blocks. Output ONLY the JSON object.`,
+        };
+        messages.unshift(jsonInstruction);
+
+        const response = await this.openAIClient.chat.completions.create({
+          messages,
+          model: this.config.model,
+          temperature:
+            input.options?.temperature ?? this.config.options?.temperature ?? 1.0,
+          top_p: input.options?.topP ?? this.config.options?.topP,
+          max_completion_tokens:
+            input.options?.maxTokens ?? this.config.options?.maxTokens,
+          stop: input.options?.stopSequences ?? this.config.options?.stopSequences,
+          frequency_penalty:
+            input.options?.frequencyPenalty ??
+            this.config.options?.frequencyPenalty,
+          presence_penalty:
+            input.options?.presencePenalty ??
+            this.config.options?.presencePenalty,
+        });
+
+        if (response.choices && response.choices.length > 0) {
+          rawContent = response.choices[0].message.content || '';
+        }
+      } catch (fallbackErr) {
+        console.error(`[OpenAI generateObject] Fallback also failed: ${fallbackErr}`);
+      }
+    }
+
+    if (!rawContent.trim()) {
+      console.warn(`[OpenAI generateObject] Empty response from model ${this.config.model}`);
       return input.schema.parse({}) as T;
     }
 
@@ -257,7 +298,7 @@ class OpenAILLM extends BaseLLM<OpenAIConfig> {
       // fall through
     }
 
-    console.warn('Failed to parse JSON from model output, using defaults');
+    console.warn(`[OpenAI generateObject] Failed to parse JSON from model ${this.config.model}, raw: ${rawContent.slice(0, 500)}`);
     return input.schema.parse({}) as T;
   }
 

@@ -53,14 +53,31 @@ class SearchAgent {
         .execute();
     }
 
-    const classification = await classify({
-      chatHistory: input.chatHistory,
-      enabledSources: input.config.sources,
-      query: input.followUp,
-      llm: input.config.llm,
-      embedding: input.config.embedding,
-      enableMemories: input.config.enableMemories,
-    });
+    let classification;
+    try {
+      classification = await classify({
+        chatHistory: input.chatHistory,
+        enabledSources: input.config.sources,
+        query: input.followUp,
+        llm: input.config.llm,
+        embedding: input.config.embedding,
+        enableMemories: input.config.enableMemories,
+      });
+    } catch (err) {
+      console.error('Classifier failed, using defaults:', err);
+      classification = {
+        classification: {
+          skipSearch: false,
+          personalSearch: false,
+          academicSearch: false,
+          discussionSearch: false,
+          showWeatherWidget: false,
+          showStockWidget: false,
+          showCalculationWidget: false,
+        },
+        standaloneFollowUp: input.followUp,
+      };
+    }
 
     const widgetPromise = WidgetExecutor.executeAll({
       classification,
@@ -81,16 +98,21 @@ class SearchAgent {
       return widgetOutputs;
     });
 
-    let searchPromise: Promise<ResearcherOutput> | null = null;
+    let searchPromise: Promise<ResearcherOutput | null> | null = null;
 
     if (!classification.classification.skipSearch) {
       const researcher = new Researcher();
-      searchPromise = researcher.research(session, {
-        chatHistory: input.chatHistory,
-        followUp: input.followUp,
-        classification: classification,
-        config: input.config,
-      });
+      searchPromise = researcher
+        .research(session, {
+          chatHistory: input.chatHistory,
+          followUp: input.followUp,
+          classification: classification,
+          config: input.config,
+        })
+        .catch((err) => {
+          console.error('Researcher failed:', err);
+          return null;
+        });
     }
 
     const [widgetOutputs, searchResults] = await Promise.all([
@@ -105,11 +127,11 @@ class SearchAgent {
     let finalContext =
       '<Query to be answered without searching; Search not made>';
 
-    if (searchResults) {
-      finalContext = searchResults?.searchFindings
+    if (searchResults?.searchFindings?.length) {
+      finalContext = searchResults.searchFindings
         .map(
           (f, index) =>
-            `<result index=${index + 1} title=${f.metadata.title}>${f.content}</result>`,
+            `<result index=${index + 1} title="${f.metadata.title}" url="${f.metadata.url}">${f.content}</result>`,
         )
         .join('\n');
     }

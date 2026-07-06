@@ -7,12 +7,29 @@ import { WidgetExecutor } from './widgets';
 
 class APISearchAgent {
   async searchAsync(session: SessionManager, input: SearchAgentInput) {
-    const classification = await classify({
-      chatHistory: input.chatHistory,
-      enabledSources: input.config.sources,
-      query: input.followUp,
-      llm: input.config.llm,
-    });
+    let classification;
+    try {
+      classification = await classify({
+        chatHistory: input.chatHistory,
+        enabledSources: input.config.sources,
+        query: input.followUp,
+        llm: input.config.llm,
+      });
+    } catch (err) {
+      console.error('Classifier failed, using defaults:', err);
+      classification = {
+        classification: {
+          skipSearch: false,
+          personalSearch: false,
+          academicSearch: false,
+          discussionSearch: false,
+          showWeatherWidget: false,
+          showStockWidget: false,
+          showCalculationWidget: false,
+        },
+        standaloneFollowUp: input.followUp,
+      };
+    }
 
     const widgetPromise = WidgetExecutor.executeAll({
       classification,
@@ -56,7 +73,7 @@ class APISearchAgent {
       searchResults?.searchFindings
         .map(
           (f, index) =>
-            `<result index=${index + 1} title=${f.metadata.title}>${f.content}</result>`,
+            `<result index=${index + 1} title="${f.metadata.title}" url="${f.metadata.url}">${f.content}</result>`,
         )
         .join('\n') || '';
 

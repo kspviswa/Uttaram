@@ -43,6 +43,7 @@ const bodySchema = z.object({
     .optional()
     .default([]),
   files: z.array(z.string()).optional().default([]),
+  projectId: z.string().nullable().optional().default(null),
   chatModel: chatModelSchema,
   embeddingModel: embeddingModelSchema,
   systemInstructions: z.string().nullable().optional().default(''),
@@ -75,6 +76,7 @@ const ensureChatExists = async (input: {
   sources: SearchSources[];
   query: string;
   fileIds: string[];
+  projectId?: string | null;
 }) => {
   try {
     const exists = await db.query.chats
@@ -95,6 +97,7 @@ const ensureChatExists = async (input: {
             name: UploadManager.getFile(id)?.name || 'Uploaded File',
           };
         }),
+        projectId: input.projectId || null,
       });
     }
   } catch (err) {
@@ -233,6 +236,7 @@ export const POST = async (req: Request) => {
       sources: body.sources as SearchSources[],
       fileIds: body.files,
       query: body.message.content,
+      projectId: body.projectId,
     });
 
     req.signal.addEventListener('abort', () => {

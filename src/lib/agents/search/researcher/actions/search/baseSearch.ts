@@ -53,7 +53,7 @@ export const executeSearch = async (input: {
         resultChunks = (
           await Promise.all(
             res.results.map(async (r) => {
-              const content = r.content || r.title;
+              const content = r.content || r.title || '';
               const chunkEmbedding = (
                 await input.embedding.embedText([content])
               )[0];
@@ -61,7 +61,7 @@ export const executeSearch = async (input: {
               return {
                 content,
                 metadata: {
-                  title: r.title,
+                  title: r.title || r.content || new URL(r.url).hostname,
                   url: r.url,
                   similarity: computeSimilarity(queryEmbedding, chunkEmbedding),
                   embedding: chunkEmbedding,
@@ -72,12 +72,12 @@ export const executeSearch = async (input: {
         ).sort((a, b) => b.metadata.similarity - a.metadata.similarity);
       } catch (err) {
         resultChunks = res.results.map((r) => {
-          const content = r.content || r.title;
+          const content = r.content || r.title || '';
 
           return {
             content,
             metadata: {
-              title: r.title,
+              title: r.title || r.content || new URL(r.url).hostname,
               url: r.url,
               similarity: 1,
               embedding: [],
@@ -183,12 +183,12 @@ export const executeSearch = async (input: {
       let resultChunks: Chunk[] = [];
 
       resultChunks = res.results.map((r) => {
-        const content = r.content || r.title;
+        const content = r.content || r.title || '';
 
         return {
           content,
           metadata: {
-            title: r.title,
+            title: r.title || r.content || new URL(r.url).hostname,
             url: r.url,
             similarity: 1,
             embedding: [],

@@ -216,6 +216,7 @@ class OllamaLLM extends BaseLLM<OllamaConfig> {
     }
 
     if (!rawContent.trim()) {
+      console.warn(`[Ollama generateObject] Empty response from model ${this.config.model}`);
       return input.schema.parse({}) as T;
     }
 
@@ -248,7 +249,7 @@ class OllamaLLM extends BaseLLM<OllamaConfig> {
       // fall through
     }
 
-    console.warn('Failed to parse JSON from model output, using defaults');
+    console.warn(`[Ollama generateObject] Failed to parse JSON from model ${this.config.model}, raw: ${rawContent.slice(0, 500)}`);
     return input.schema.parse({}) as T;
   }
 

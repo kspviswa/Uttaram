@@ -17,8 +17,10 @@ import {
   X,
   Check,
   FolderOpen,
+  MessageSquarePlus,
 } from 'lucide-react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { toast } from 'sonner';
 
@@ -280,12 +282,32 @@ const MoveToProjectDropdown = ({
 };
 
 const Page = () => {
+  const router = useRouter();
   const [chats, setChats] = useState<Chat[]>([]);
   const [projects, setProjects] = useState<Project[]>([]);
   const [loading, setLoading] = useState(true);
   const [expandedProjects, setExpandedProjects] = useState<Set<string>>(
     new Set(),
   );
+  const [creatingChatInProject, setCreatingChatInProject] = useState<string | null>(null);
+
+  const handleNewChatInProject = async (projectId: string) => {
+    try {
+      setCreatingChatInProject(projectId);
+      const project = projects.find((p) => p.id === projectId);
+      const res = await fetch('/api/chats', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ title: 'New Chat', projectId }),
+      });
+      if (!res.ok) throw new Error('Failed to create chat');
+      const data = await res.json();
+      router.push(`/c/${data.chat.id}`);
+    } catch (err: any) {
+      toast.error(err.message);
+      setCreatingChatInProject(null);
+    }
+  };
 
   const fetchData = async () => {
     setLoading(true);
@@ -294,10 +316,10 @@ const Page = () => {
         fetch('/api/chats'),
         fetch('/api/projects'),
       ]);
-      const chatsData = await chatsRes.json();
-      const projectsData = await projectsRes.json();
-      setChats(chatsData.chats);
-      setProjects(projectsData.projects);
+      const chatsData = chatsRes.ok ? await chatsRes.json() : { chats: [] };
+      const projectsData = projectsRes.ok ? await projectsRes.json() : { projects: [] };
+      setChats(chatsData.chats ?? []);
+      setProjects(projectsData.projects ?? []);
     } catch (err) {
       console.error('Error fetching data:', err);
     } finally {
@@ -381,27 +403,11 @@ const Page = () => {
             />
           </svg>
         </div>
-      ) : chatCount === 0 ? (
-        <div className="flex flex-col items-center justify-center min-h-[70vh] px-2 text-center">
-          <div className="flex items-center justify-center w-12 h-12 rounded-2xl border border-light-200 dark:border-dark-200 bg-light-secondary dark:bg-dark-secondary">
-            <BookOpenText className="text-black/70 dark:text-white/70" />
-          </div>
-          <p className="mt-2 text-black/70 dark:text-white/70 text-sm">
-            No chats found.
-          </p>
-          <p className="mt-1 text-black/70 dark:text-white/70 text-sm">
-            <Link href="/" className="text-sky-400">
-              Start a new chat
-            </Link>{' '}
-            to see it listed here.
-          </p>
-        </div>
       ) : (
         <div className="pt-6 pb-28 px-2 space-y-6">
-          {/* Project sections */}
+          {/* Project sections — always visible when projects exist */}
           {projects.map((project) => {
             const projectChats = getProjectChats(project.id);
-            if (projectChats.length === 0) return null;
             const expanded = expandedProjects.has(project.id);
 
             return (
@@ -424,10 +430,25 @@ const Page = () => {
                       {projectChats.length}
                     </span>
                   </button>
+                  <button
+                    onClick={() => handleNewChatInProject(project.id)}
+                    disabled={creatingChatInProject === project.id}
+                    className="p-1 rounded-lg text-black/50 dark:text-white/50 hover:text-black dark:hover:text-white hover:bg-light-200 dark:hover:bg-dark-200 transition-colors disabled:opacity-40"
+                    title="New chat in this project"
+                  >
+                    {creatingChatInProject === project.id ? (
+                      <svg className="animate-spin h-4 w-4" viewBox="0 0 24 24">
+                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
+                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+                      </svg>
+                    ) : (
+                      <MessageSquarePlus size={16} />
+                    )}
+                  </button>
                   <ProjectMenu project={project} onRenamed={fetchData} onDeleted={fetchData} />
                 </div>
 
-                {expanded && (
+                {expanded && projectChats.length > 0 && (
                   <div className="rounded-2xl border border-light-200 dark:border-dark-200 overflow-hidden bg-light-primary dark:bg-dark-primary">
                     {projectChats.map((chat, index) => (
                       <ChatRow
@@ -469,6 +490,24 @@ const Page = () => {
                   />
                 ))}
               </div>
+            </div>
+          )}
+
+          {/* Empty state — only when no chats and no projects */}
+          {chatCount === 0 && projects.length === 0 && (
+            <div className="flex flex-col items-center justify-center min-h-[40vh] px-2 text-center">
+              <div className="flex items-center justify-center w-12 h-12 rounded-2xl border border-light-200 dark:border-dark-200 bg-light-secondary dark:bg-dark-secondary">
+                <BookOpenText className="text-black/70 dark:text-white/70" />
+              </div>
+              <p className="mt-2 text-black/70 dark:text-white/70 text-sm">
+                No chats found.
+              </p>
+              <p className="mt-1 text-black/70 dark:text-white/70 text-sm">
+                <Link href="/" className="text-sky-400">
+                  Start a new chat
+                </Link>{' '}
+                to see it listed here.
+              </p>
             </div>
           )}
         </div>

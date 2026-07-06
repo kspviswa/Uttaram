@@ -195,38 +195,70 @@ class OpenAILLM extends BaseLLM<OpenAIConfig> {
   }
 
   async generateObject<T>(input: GenerateObjectInput): Promise<T> {
-    const response = await this.openAIClient.chat.completions.parse({
-      messages: this.convertToOpenAIMessages(input.messages),
-      model: this.config.model,
-      temperature:
-        input.options?.temperature ?? this.config.options?.temperature ?? 1.0,
-      top_p: input.options?.topP ?? this.config.options?.topP,
-      max_completion_tokens:
-        input.options?.maxTokens ?? this.config.options?.maxTokens,
-      stop: input.options?.stopSequences ?? this.config.options?.stopSequences,
-      frequency_penalty:
-        input.options?.frequencyPenalty ??
-        this.config.options?.frequencyPenalty,
-      presence_penalty:
-        input.options?.presencePenalty ?? this.config.options?.presencePenalty,
-      response_format: zodResponseFormat(input.schema, 'object'),
-    });
+    let rawContent = '';
 
-    if (response.choices && response.choices.length > 0) {
-      try {
-        return input.schema.parse(
-          JSON.parse(
-            repairJson(response.choices[0].message.content!, {
-              extractJson: true,
-            }) as string,
-          ),
-        ) as T;
-      } catch (err) {
-        throw new Error(`Error parsing response from OpenAI: ${err}`);
+    try {
+      const response = await this.openAIClient.chat.completions.create({
+        messages: this.convertToOpenAIMessages(input.messages),
+        model: this.config.model,
+        temperature:
+          input.options?.temperature ?? this.config.options?.temperature ?? 1.0,
+        top_p: input.options?.topP ?? this.config.options?.topP,
+        max_completion_tokens:
+          input.options?.maxTokens ?? this.config.options?.maxTokens,
+        stop: input.options?.stopSequences ?? this.config.options?.stopSequences,
+        frequency_penalty:
+          input.options?.frequencyPenalty ??
+          this.config.options?.frequencyPenalty,
+        presence_penalty:
+          input.options?.presencePenalty ?? this.config.options?.presencePenalty,
+        response_format: { type: 'json_object' },
+      });
+
+      if (!response.choices || response.choices.length === 0) {
+        throw new Error('No response from OpenAI');
       }
+
+      rawContent = response.choices[0].message.content || '';
+    } catch (err) {
+      throw new Error(`Error generating object from OpenAI: ${err}`);
     }
 
-    throw new Error('No response from OpenAI');
+    if (!rawContent.trim()) {
+      return input.schema.parse({}) as T;
+    }
+
+    const tryParse = (text: string): T | null => {
+      try {
+        return input.schema.parse(JSON.parse(text)) as T;
+      } catch {
+        return null;
+      }
+    };
+
+    let parsed: T | null = tryParse(rawContent);
+    if (parsed) return parsed;
+
+    const codeBlockMatch = rawContent.match(/```(?:json)?\s*([\s\S]*?)```/);
+    if (codeBlockMatch) {
+      parsed = tryParse(codeBlockMatch[1].trim());
+      if (parsed) return parsed;
+    }
+
+    const repaired = repairJson(rawContent, { extractJson: true }) as string;
+    parsed = tryParse(repaired);
+    if (parsed) return parsed;
+
+    try {
+      const partial = parse(rawContent);
+      parsed = tryParse(JSON.stringify(partial));
+      if (parsed) return parsed;
+    } catch {
+      // fall through
+    }
+
+    console.warn('Failed to parse JSON from model output, using defaults');
+    return input.schema.parse({}) as T;
   }
 
   async *streamObject<T>(input: GenerateObjectInput): AsyncGenerator<T> {

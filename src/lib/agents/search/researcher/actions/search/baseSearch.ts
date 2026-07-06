@@ -69,7 +69,7 @@ export const executeSearch = async (input: {
               };
             }),
           )
-        ).filter((c) => c.metadata.similarity > 0.5);
+        ).sort((a, b) => b.metadata.similarity - a.metadata.similarity);
       } catch (err) {
         resultChunks = res.results.map((r) => {
           const content = r.content || r.title;

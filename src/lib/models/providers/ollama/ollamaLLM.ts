@@ -184,40 +184,72 @@ class OllamaLLM extends BaseLLM<OllamaConfig> {
   }
 
   async generateObject<T>(input: GenerateObjectInput): Promise<T> {
-    const response = await this.ollamaClient.chat({
-      model: this.config.model,
-      messages: this.convertToOllamaMessages(input.messages),
-      format: z.toJSONSchema(input.schema),
-      ...(reasoningModels.find((m) => this.config.model.includes(m))
-        ? { think: false }
-        : {}),
-      options: {
-        top_p: input.options?.topP ?? this.config.options?.topP,
-        temperature:
-          input.options?.temperature ?? this.config.options?.temperature ?? 0.7,
-        num_predict: input.options?.maxTokens ?? this.config.options?.maxTokens,
-        frequency_penalty:
-          input.options?.frequencyPenalty ??
-          this.config.options?.frequencyPenalty,
-        presence_penalty:
-          input.options?.presencePenalty ??
-          this.config.options?.presencePenalty,
-        stop:
-          input.options?.stopSequences ?? this.config.options?.stopSequences,
-      },
-    });
+    let rawContent = '';
 
     try {
-      return input.schema.parse(
-        JSON.parse(
-          repairJson(response.message.content, {
-            extractJson: true,
-          }) as string,
-        ),
-      ) as T;
+      const response = await this.ollamaClient.chat({
+        model: this.config.model,
+        messages: this.convertToOllamaMessages(input.messages),
+        format: z.toJSONSchema(input.schema),
+        ...(reasoningModels.find((m) => this.config.model.includes(m))
+          ? { think: false }
+          : {}),
+        options: {
+          top_p: input.options?.topP ?? this.config.options?.topP,
+          temperature:
+            input.options?.temperature ?? this.config.options?.temperature ?? 0.7,
+          num_predict: input.options?.maxTokens ?? this.config.options?.maxTokens,
+          frequency_penalty:
+            input.options?.frequencyPenalty ??
+            this.config.options?.frequencyPenalty,
+          presence_penalty:
+            input.options?.presencePenalty ??
+            this.config.options?.presencePenalty,
+          stop:
+            input.options?.stopSequences ?? this.config.options?.stopSequences,
+        },
+      });
+
+      rawContent = response.message.content || '';
     } catch (err) {
-      throw new Error(`Error parsing response from Ollama: ${err}`);
+      throw new Error(`Error generating object from Ollama: ${err}`);
     }
+
+    if (!rawContent.trim()) {
+      return input.schema.parse({}) as T;
+    }
+
+    const tryParse = (text: string): T | null => {
+      try {
+        return input.schema.parse(JSON.parse(text)) as T;
+      } catch {
+        return null;
+      }
+    };
+
+    let parsed: T | null = tryParse(rawContent);
+    if (parsed) return parsed;
+
+    const codeBlockMatch = rawContent.match(/```(?:json)?\s*([\s\S]*?)```/);
+    if (codeBlockMatch) {
+      parsed = tryParse(codeBlockMatch[1].trim());
+      if (parsed) return parsed;
+    }
+
+    const repaired = repairJson(rawContent, { extractJson: true }) as string;
+    parsed = tryParse(repaired);
+    if (parsed) return parsed;
+
+    try {
+      const partial = parse(rawContent);
+      parsed = tryParse(JSON.stringify(partial));
+      if (parsed) return parsed;
+    } catch {
+      // fall through
+    }
+
+    console.warn('Failed to parse JSON from model output, using defaults');
+    return input.schema.parse({}) as T;
   }
 
   async *streamObject<T>(input: GenerateObjectInput): AsyncGenerator<T> {

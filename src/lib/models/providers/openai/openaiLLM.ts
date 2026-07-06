@@ -212,7 +212,7 @@ class OpenAILLM extends BaseLLM<OpenAIConfig> {
           this.config.options?.frequencyPenalty,
         presence_penalty:
           input.options?.presencePenalty ?? this.config.options?.presencePenalty,
-        response_format: { type: 'json_object' },
+        response_format: zodResponseFormat(input.schema, 'object'),
       });
 
       if (!response.choices || response.choices.length === 0) {

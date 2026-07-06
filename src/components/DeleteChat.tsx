@@ -10,17 +10,14 @@ import {
 } from '@headlessui/react';
 import { Fragment, useState } from 'react';
 import { toast } from 'sonner';
-import { Chat } from '@/app/library/page';
 
 const DeleteChat = ({
   chatId,
-  chats,
-  setChats,
+  onDeleted,
   redirect = false,
 }: {
   chatId: string;
-  chats: Chat[];
-  setChats: (chats: Chat[]) => void;
+  onDeleted?: () => void;
   redirect?: boolean;
 }) => {
   const [confirmationDialogOpen, setConfirmationDialogOpen] = useState(false);
@@ -40,9 +37,7 @@ const DeleteChat = ({
         throw new Error('Failed to delete chat');
       }
 
-      const newChats = chats.filter((chat) => chat.id !== chatId);
-
-      setChats(newChats);
+      onDeleted?.();
 
       if (redirect) {
         window.location.href = '/';

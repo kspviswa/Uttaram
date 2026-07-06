@@ -2,9 +2,25 @@
 
 import DeleteChat from '@/components/DeleteChat';
 import { formatTimeDifference } from '@/lib/utils';
-import { BookOpenText, ClockIcon, FileText, Globe2Icon } from 'lucide-react';
+import {
+  BookOpenText,
+  ClockIcon,
+  FileText,
+  Globe2Icon,
+  Plus,
+  FolderKanban,
+  ChevronDown,
+  ChevronRight,
+  MoreHorizontal,
+  Pencil,
+  Trash2,
+  X,
+  Check,
+  FolderOpen,
+} from 'lucide-react';
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
+import { toast } from 'sonner';
 
 export interface Chat {
   id: string;
@@ -12,31 +28,301 @@ export interface Chat {
   createdAt: string;
   sources: string[];
   files: { fileId: string; name: string }[];
+  projectId?: string | null;
 }
+
+export interface Project {
+  id: string;
+  name: string;
+  description?: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+const NewProjectForm = ({
+  onCreated,
+}: {
+  onCreated: () => void;
+}) => {
+  const [name, setName] = useState('');
+  const [open, setOpen] = useState(false);
+
+  const handleCreate = async () => {
+    if (!name.trim()) return;
+    try {
+      const res = await fetch('/api/projects', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name: name.trim() }),
+      });
+      if (!res.ok) throw new Error('Failed to create project');
+      setName('');
+      setOpen(false);
+      onCreated();
+    } catch (err: any) {
+      toast.error(err.message);
+    }
+  };
+
+  if (!open) {
+    return (
+      <button
+        onClick={() => setOpen(true)}
+        className="inline-flex items-center gap-1.5 text-sm text-black/60 dark:text-white/60 hover:text-black dark:hover:text-white transition-colors"
+      >
+        <Plus size={16} />
+        New Project
+      </button>
+    );
+  }
+
+  return (
+    <div className="flex items-center gap-2">
+      <input
+        autoFocus
+        value={name}
+        onChange={(e) => setName(e.target.value)}
+        onKeyDown={(e) => {
+          if (e.key === 'Enter') handleCreate();
+          if (e.key === 'Escape') setOpen(false);
+        }}
+        placeholder="Project name..."
+        className="flex-1 bg-transparent border border-light-200 dark:border-dark-200 rounded-lg px-3 py-1.5 text-sm text-black dark:text-white outline-none focus:border-black/30 dark:focus:border-white/30"
+      />
+      <button
+        onClick={handleCreate}
+        className="p-1.5 rounded-lg bg-black dark:bg-white text-white dark:text-black hover:opacity-80 transition-opacity"
+      >
+        <Check size={14} />
+      </button>
+      <button
+        onClick={() => setOpen(false)}
+        className="p-1.5 rounded-lg text-black/50 dark:text-white/50 hover:text-black dark:hover:text-white transition-colors"
+      >
+        <X size={14} />
+      </button>
+    </div>
+  );
+};
+
+const ProjectMenu = ({
+  project,
+  onRenamed,
+  onDeleted,
+}: {
+  project: Project;
+  onRenamed: () => void;
+  onDeleted: () => void;
+}) => {
+  const [open, setOpen] = useState(false);
+  const [renaming, setRenaming] = useState(false);
+  const [name, setName] = useState(project.name);
+
+  const handleRename = async () => {
+    if (!name.trim() || name.trim() === project.name) {
+      setRenaming(false);
+      return;
+    }
+    try {
+      const res = await fetch(`/api/projects/${project.id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name: name.trim() }),
+      });
+      if (!res.ok) throw new Error('Failed to rename');
+      setRenaming(false);
+      onRenamed();
+    } catch (err: any) {
+      toast.error(err.message);
+    }
+  };
+
+  const handleDelete = async () => {
+    try {
+      const res = await fetch(`/api/projects/${project.id}`, {
+        method: 'DELETE',
+      });
+      if (!res.ok) throw new Error('Failed to delete');
+      setOpen(false);
+      onDeleted();
+    } catch (err: any) {
+      toast.error(err.message);
+    }
+  };
+
+  if (renaming) {
+    return (
+      <div className="flex items-center gap-2">
+        <input
+          autoFocus
+          value={name}
+          onChange={(e) => setName(e.target.value)}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter') handleRename();
+            if (e.key === 'Escape') setRenaming(false);
+          }}
+          className="flex-1 bg-transparent border border-light-200 dark:border-dark-200 rounded-lg px-2 py-1 text-sm text-black dark:text-white outline-none focus:border-black/30 dark:focus:border-white/30"
+        />
+        <button onClick={handleRename} className="p-1 text-black/50 dark:text-white/50 hover:text-black dark:hover:text-white">
+          <Check size={14} />
+        </button>
+        <button onClick={() => setRenaming(false)} className="p-1 text-black/50 dark:text-white/50 hover:text-black dark:hover:text-white">
+          <X size={14} />
+        </button>
+      </div>
+    );
+  }
+
+  return (
+    <div className="relative">
+      <button
+        onClick={() => setOpen(!open)}
+        className="p-1 rounded-lg hover:bg-light-200 dark:hover:bg-dark-200 text-black/50 dark:text-white/50 transition-colors"
+      >
+        <MoreHorizontal size={16} />
+      </button>
+      {open && (
+        <>
+          <div className="fixed inset-0 z-10" onClick={() => setOpen(false)} />
+          <div className="absolute right-0 top-full mt-1 z-20 min-w-[140px] rounded-lg border border-light-200 dark:border-dark-200 bg-light-secondary dark:bg-dark-secondary shadow-lg py-1">
+            <button
+              onClick={() => {
+                setRenaming(true);
+                setOpen(false);
+              }}
+              className="w-full flex items-center gap-2 px-3 py-1.5 text-sm text-black/70 dark:text-white/70 hover:bg-light-200 dark:hover:bg-dark-200 transition-colors"
+            >
+              <Pencil size={14} />
+              Rename
+            </button>
+            <button
+              onClick={handleDelete}
+              className="w-full flex items-center gap-2 px-3 py-1.5 text-sm text-red-400 hover:bg-light-200 dark:hover:bg-dark-200 transition-colors"
+            >
+              <Trash2 size={14} />
+              Delete
+            </button>
+          </div>
+        </>
+      )}
+    </div>
+  );
+};
+
+const MoveToProjectDropdown = ({
+  chatId,
+  currentProjectId,
+  projects,
+  onMoved,
+}: {
+  chatId: string;
+  currentProjectId?: string | null;
+  projects: Project[];
+  onMoved: () => void;
+}) => {
+  const [open, setOpen] = useState(false);
+
+  const handleMove = async (projectId: string | null) => {
+    try {
+      const res = await fetch(`/api/chats/${chatId}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ projectId }),
+      });
+      if (!res.ok) throw new Error('Failed to move chat');
+      setOpen(false);
+      onMoved();
+    } catch (err: any) {
+      toast.error(err.message);
+    }
+  };
+
+  return (
+    <div className="relative">
+      <button
+        onClick={(e) => {
+          e.preventDefault();
+          setOpen(!open);
+        }}
+        className="inline-flex items-center gap-1 text-xs text-black/50 dark:text-white/50 hover:text-black dark:hover:text-white transition-colors px-1.5 py-0.5 rounded hover:bg-light-200 dark:hover:bg-dark-200"
+        title="Move to project"
+      >
+        <FolderKanban size={14} />
+      </button>
+      {open && (
+        <>
+          <div className="fixed inset-0 z-10" onClick={() => setOpen(false)} />
+          <div className="absolute left-0 top-full mt-1 z-20 min-w-[160px] rounded-lg border border-light-200 dark:border-dark-200 bg-light-secondary dark:bg-dark-secondary shadow-lg py-1">
+            <button
+              onClick={() => handleMove(null)}
+              className="w-full text-left px-3 py-1.5 text-sm text-black/70 dark:text-white/70 hover:bg-light-200 dark:hover:bg-dark-200 transition-colors"
+            >
+              No project
+            </button>
+            {projects.map((p) => (
+              <button
+                key={p.id}
+                onClick={() => handleMove(p.id)}
+                className={`w-full text-left px-3 py-1.5 text-sm transition-colors hover:bg-light-200 dark:hover:bg-dark-200 ${
+                  p.id === currentProjectId
+                    ? 'text-[#24A0ED]'
+                    : 'text-black/70 dark:text-white/70'
+                }`}
+              >
+                {p.name}
+              </button>
+            ))}
+          </div>
+        </>
+      )}
+    </div>
+  );
+};
 
 const Page = () => {
   const [chats, setChats] = useState<Chat[]>([]);
+  const [projects, setProjects] = useState<Project[]>([]);
   const [loading, setLoading] = useState(true);
+  const [expandedProjects, setExpandedProjects] = useState<Set<string>>(
+    new Set(),
+  );
+
+  const fetchData = async () => {
+    setLoading(true);
+    try {
+      const [chatsRes, projectsRes] = await Promise.all([
+        fetch('/api/chats'),
+        fetch('/api/projects'),
+      ]);
+      const chatsData = await chatsRes.json();
+      const projectsData = await projectsRes.json();
+      setChats(chatsData.chats);
+      setProjects(projectsData.projects);
+    } catch (err) {
+      console.error('Error fetching data:', err);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   useEffect(() => {
-    const fetchChats = async () => {
-      setLoading(true);
-
-      const res = await fetch(`/api/chats`, {
-        method: 'GET',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-      });
-
-      const data = await res.json();
-
-      setChats(data.chats);
-      setLoading(false);
-    };
-
-    fetchChats();
+    fetchData();
   }, []);
+
+  const uncategorized = chats.filter((c) => !c.projectId);
+  const getProjectChats = (projectId: string) =>
+    chats.filter((c) => c.projectId === projectId);
+
+  const toggleProject = (id: string) => {
+    setExpandedProjects((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  };
+
+  const chatCount = chats.length;
 
   return (
     <div>
@@ -62,10 +348,18 @@ const Page = () => {
               <BookOpenText size={14} />
               {loading
                 ? 'Loading…'
-                : `${chats.length} ${chats.length === 1 ? 'chat' : 'chats'}`}
+                : `${chatCount} ${chatCount === 1 ? 'chat' : 'chats'}`}
+            </span>
+            <span className="inline-flex items-center gap-1 rounded-full border border-black/20 dark:border-white/20 px-2 py-0.5">
+              <FolderKanban size={14} />
+              {projects.length} {projects.length === 1 ? 'project' : 'projects'}
             </span>
           </div>
         </div>
+      </div>
+
+      <div className="pt-4 px-2">
+        <NewProjectForm onCreated={fetchData} />
       </div>
 
       {loading ? (
@@ -87,7 +381,7 @@ const Page = () => {
             />
           </svg>
         </div>
-      ) : chats.length === 0 ? (
+      ) : chatCount === 0 ? (
         <div className="flex flex-col items-center justify-center min-h-[70vh] px-2 text-center">
           <div className="flex items-center justify-center w-12 h-12 rounded-2xl border border-light-200 dark:border-dark-200 bg-light-secondary dark:bg-dark-secondary">
             <BookOpenText className="text-black/70 dark:text-white/70" />
@@ -103,74 +397,164 @@ const Page = () => {
           </p>
         </div>
       ) : (
-        <div className="pt-6 pb-28 px-2">
-          <div className="rounded-2xl border border-light-200 dark:border-dark-200 overflow-hidden bg-light-primary dark:bg-dark-primary">
-            {chats.map((chat, index) => {
-              const sourcesLabel =
-                chat.sources.length === 0
-                  ? null
-                  : chat.sources.length <= 2
-                    ? chat.sources
-                        .map((s) => s.charAt(0).toUpperCase() + s.slice(1))
-                        .join(', ')
-                    : `${chat.sources
-                        .slice(0, 2)
-                        .map((s) => s.charAt(0).toUpperCase() + s.slice(1))
-                        .join(', ')} + ${chat.sources.length - 2}`;
+        <div className="pt-6 pb-28 px-2 space-y-6">
+          {/* Project sections */}
+          {projects.map((project) => {
+            const projectChats = getProjectChats(project.id);
+            if (projectChats.length === 0) return null;
+            const expanded = expandedProjects.has(project.id);
 
-              return (
-                <div
-                  key={chat.id}
-                  className={
-                    'group flex flex-col gap-2 p-4 hover:bg-light-secondary dark:hover:bg-dark-secondary transition-colors duration-200 ' +
-                    (index !== chats.length - 1
-                      ? 'border-b border-light-200 dark:border-dark-200'
-                      : '')
-                  }
-                >
-                  <div className="flex items-start justify-between gap-3">
-                    <Link
-                      href={`/c/${chat.id}`}
-                      className="flex-1 text-black dark:text-white text-base lg:text-lg font-medium leading-snug line-clamp-2 group-hover:text-[#24A0ED] transition duration-200"
-                      title={chat.title}
-                    >
-                      {chat.title}
-                    </Link>
-                    <div className="pt-0.5 shrink-0">
-                      <DeleteChat
-                        chatId={chat.id}
-                        chats={chats}
-                        setChats={setChats}
-                      />
-                    </div>
-                  </div>
-
-                  <div className="flex flex-wrap items-center gap-2 text-black/70 dark:text-white/70">
-                    <span className="inline-flex items-center gap-1 text-xs">
-                      <ClockIcon size={14} />
-                      {formatTimeDifference(new Date(), chat.createdAt)} Ago
+            return (
+              <div key={project.id}>
+                <div className="flex items-center gap-2 mb-2 group">
+                  <button
+                    onClick={() => toggleProject(project.id)}
+                    className="flex items-center gap-2 flex-1 text-left"
+                  >
+                    {expanded ? (
+                      <ChevronDown size={18} className="text-black/50 dark:text-white/50" />
+                    ) : (
+                      <ChevronRight size={18} className="text-black/50 dark:text-white/50" />
+                    )}
+                    <FolderOpen size={20} className="text-black/70 dark:text-white/70" />
+                    <h2 className="text-lg font-medium text-black dark:text-white">
+                      {project.name}
+                    </h2>
+                    <span className="text-xs text-black/50 dark:text-white/50">
+                      {projectChats.length}
                     </span>
-
-                    {sourcesLabel && (
-                      <span className="inline-flex items-center gap-1 text-xs border border-black/20 dark:border-white/20 rounded-full px-2 py-0.5">
-                        <Globe2Icon size={14} />
-                        {sourcesLabel}
-                      </span>
-                    )}
-                    {chat.files.length > 0 && (
-                      <span className="inline-flex items-center gap-1 text-xs border border-black/20 dark:border-white/20 rounded-full px-2 py-0.5">
-                        <FileText size={14} />
-                        {chat.files.length}{' '}
-                        {chat.files.length === 1 ? 'file' : 'files'}
-                      </span>
-                    )}
-                  </div>
+                  </button>
+                  <ProjectMenu project={project} onRenamed={fetchData} onDeleted={fetchData} />
                 </div>
-              );
-            })}
-          </div>
+
+                {expanded && (
+                  <div className="rounded-2xl border border-light-200 dark:border-dark-200 overflow-hidden bg-light-primary dark:bg-dark-primary">
+                    {projectChats.map((chat, index) => (
+                      <ChatRow
+                        key={chat.id}
+                        chat={chat}
+                        index={index}
+                        total={projectChats.length}
+                        projects={projects}
+                        onMoved={fetchData}
+                      />
+                    ))}
+                  </div>
+                )}
+              </div>
+            );
+          })}
+
+          {/* Uncategorized section */}
+          {uncategorized.length > 0 && (
+            <div>
+              <div className="flex items-center gap-2 mb-2">
+                <FolderKanban size={20} className="text-black/50 dark:text-white/50" />
+                <h2 className="text-lg font-medium text-black/60 dark:text-white/60">
+                  Uncategorized
+                </h2>
+                <span className="text-xs text-black/50 dark:text-white/50">
+                  {uncategorized.length}
+                </span>
+              </div>
+              <div className="rounded-2xl border border-light-200 dark:border-dark-200 overflow-hidden bg-light-primary dark:bg-dark-primary">
+                {uncategorized.map((chat, index) => (
+                  <ChatRow
+                    key={chat.id}
+                    chat={chat}
+                    index={index}
+                    total={uncategorized.length}
+                    projects={projects}
+                    onMoved={fetchData}
+                  />
+                ))}
+              </div>
+            </div>
+          )}
         </div>
       )}
+    </div>
+  );
+};
+
+const ChatRow = ({
+  chat,
+  index,
+  total,
+  projects,
+  onMoved,
+}: {
+  chat: Chat;
+  index: number;
+  total: number;
+  projects: Project[];
+  onMoved: () => void;
+}) => {
+  const sourcesLabel =
+    chat.sources.length === 0
+      ? null
+      : chat.sources.length <= 2
+        ? chat.sources
+            .map((s) => s.charAt(0).toUpperCase() + s.slice(1))
+            .join(', ')
+        : `${chat.sources
+            .slice(0, 2)
+            .map((s) => s.charAt(0).toUpperCase() + s.slice(1))
+            .join(', ')} + ${chat.sources.length - 2}`;
+
+  return (
+    <div
+      className={
+        'group flex flex-col gap-2 p-4 hover:bg-light-secondary dark:hover:bg-dark-secondary transition-colors duration-200 ' +
+        (index !== total - 1
+          ? 'border-b border-light-200 dark:border-dark-200'
+          : '')
+      }
+    >
+      <div className="flex items-start justify-between gap-3">
+        <Link
+          href={`/c/${chat.id}`}
+          className="flex-1 text-black dark:text-white text-base lg:text-lg font-medium leading-snug line-clamp-2 group-hover:text-[#24A0ED] transition duration-200"
+          title={chat.title}
+        >
+          {chat.title}
+        </Link>
+        <div className="flex items-center gap-1 pt-0.5 shrink-0">
+          {projects.length > 0 && (
+            <MoveToProjectDropdown
+              chatId={chat.id}
+              currentProjectId={chat.projectId}
+              projects={projects}
+              onMoved={onMoved}
+            />
+          )}
+          <DeleteChat
+            chatId={chat.id}
+            onDeleted={onMoved}
+          />
+        </div>
+      </div>
+
+      <div className="flex flex-wrap items-center gap-2 text-black/70 dark:text-white/70">
+        <span className="inline-flex items-center gap-1 text-xs">
+          <ClockIcon size={14} />
+          {formatTimeDifference(new Date(), chat.createdAt)} Ago
+        </span>
+
+        {sourcesLabel && (
+          <span className="inline-flex items-center gap-1 text-xs border border-black/20 dark:border-white/20 rounded-full px-2 py-0.5">
+            <Globe2Icon size={14} />
+            {sourcesLabel}
+          </span>
+        )}
+        {chat.files.length > 0 && (
+          <span className="inline-flex items-center gap-1 text-xs border border-black/20 dark:border-white/20 rounded-full px-2 py-0.5">
+            <FileText size={14} />
+            {chat.files.length}{' '}
+            {chat.files.length === 1 ? 'file' : 'files'}
+          </span>
+        )}
+      </div>
     </div>
   );
 };

@@ -314,8 +314,6 @@ const Navbar = () => {
             <DeleteChat
               redirect
               chatId={chatId!}
-              chats={[]}
-              setChats={() => {}}
             />
           </div>
         </div>

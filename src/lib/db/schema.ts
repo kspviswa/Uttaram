@@ -23,6 +23,14 @@ interface DBFile {
   fileId: string;
 }
 
+export const projects = sqliteTable('projects', {
+  id: text('id').primaryKey(),
+  name: text('name').notNull(),
+  description: text('description').default(''),
+  createdAt: text('createdAt').notNull(),
+  updatedAt: text('updatedAt').notNull(),
+});
+
 export const chats = sqliteTable('chats', {
   id: text('id').primaryKey(),
   title: text('title').notNull(),
@@ -35,4 +43,5 @@ export const chats = sqliteTable('chats', {
   files: text('files', { mode: 'json' })
     .$type<DBFile[]>()
     .default(sql`'[]'`),
+  projectId: text('projectId'),
 });

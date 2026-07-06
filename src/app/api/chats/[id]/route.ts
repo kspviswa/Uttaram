@@ -37,6 +37,36 @@ export const GET = async (
   }
 };
 
+export const PATCH = async (
+  req: Request,
+  { params }: { params: Promise<{ id: string }> },
+) => {
+  try {
+    const { id } = await params;
+    const body = await req.json();
+    const { projectId } = body;
+
+    const chatExists = await db.query.chats.findFirst({
+      where: eq(chats.id, id),
+    });
+
+    if (!chatExists) {
+      return Response.json({ message: 'Chat not found' }, { status: 404 });
+    }
+
+    await db
+      .update(chats)
+      .set({ projectId: projectId || null })
+      .where(eq(chats.id, id))
+      .execute();
+
+    return Response.json({ message: 'Chat updated' }, { status: 200 });
+  } catch (err) {
+    console.error('Error updating chat:', err);
+    return Response.json({ message: 'An error occurred' }, { status: 500 });
+  }
+};
+
 export const DELETE = async (
   req: Request,
   { params }: { params: Promise<{ id: string }> },

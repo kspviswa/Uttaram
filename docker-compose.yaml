@@ -4,7 +4,7 @@ services:
     build:
       context: .
     ports:
-      - '3000:3000'
+      - '7777:3000'
     volumes:
       - ./data:/home/vane/data
     restart: unless-stopped

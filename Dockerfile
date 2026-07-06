@@ -1,6 +1,4 @@
-FROM node:24.5.0-slim AS builder
-
-RUN apt-get update && apt-get install -y sqlite3 && rm -rf /var/lib/apt/lists/*
+FROM node:24.5.0 AS builder
 
 WORKDIR /home/vane
 
@@ -14,6 +12,7 @@ COPY drizzle ./drizzle
 
 RUN mkdir -p /home/vane/data
 RUN yarn build
+RUN yarn install --frozen-lockfile --production
 
 FROM node:24.5.0-slim
 
@@ -26,13 +25,14 @@ WORKDIR /home/vane
 COPY --from=builder /home/vane/public ./public
 COPY --from=builder /home/vane/.next/static ./public/_next/static
 COPY --from=builder /home/vane/.next/standalone ./
+COPY --from=builder /home/vane/node_modules ./node_modules
 COPY --from=builder /home/vane/data ./data
 COPY drizzle ./drizzle
 
 RUN mkdir /home/vane/uploads
 
-RUN yarn add playwright
-RUN yarn playwright install --with-deps --only-shell chromium
+RUN npx playwright install --with-deps --only-shell chromium \
+    && rm -rf /root/.cache /tmp/*
 
 WORKDIR /home/vane
 COPY entrypoint.sh ./entrypoint.sh

@@ -1,7 +1,7 @@
 export const dynamic = 'force-dynamic';
 
 import type { Metadata, Viewport } from 'next';
-import { Montserrat } from 'next/font/google';
+import { Montserrat, Noto_Sans_Devanagari } from 'next/font/google';
 import './globals.css';
 import { cn } from '@/lib/utils';
 import Sidebar from '@/components/Sidebar';
@@ -18,11 +18,19 @@ const montserrat = Montserrat({
   fallback: ['Arial', 'sans-serif'],
 });
 
+const notoDevanagari = Noto_Sans_Devanagari({
+  weight: ['400', '500', '700'],
+  subsets: ['devanagari'],
+  display: 'swap',
+  variable: '--font-noto-devanagari',
+});
+
 export const metadata: Metadata = {
   title: 'उत्तारम् - Direct your curiosity',
   description: 'उत्तारम् is an AI powered answering engine.',
   manifest: '/manifest.webmanifest',
   icons: {
+    icon: '/icon.svg',
     apple: '/icon.png',
   },
   other: {
@@ -51,7 +59,7 @@ export default function RootLayout({
 
   return (
     <html className="h-full" lang="en" suppressHydrationWarning>
-      <body className={cn('h-full antialiased', montserrat.className)}>
+      <body className={cn('h-full antialiased', montserrat.className, notoDevanagari.variable)}>
         <ThemeProvider>
           {setupComplete ? (
             <ChatProvider>

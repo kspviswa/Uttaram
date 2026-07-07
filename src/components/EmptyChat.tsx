@@ -8,6 +8,7 @@ import Link from 'next/link';
 import WeatherWidget from './WeatherWidget';
 import NewsArticleWidget from './NewsArticleWidget';
 import SettingsButtonMobile from '@/components/Settings/SettingsButtonMobile';
+import UttaramLogo from './Brand/UttaramLogo';
 import {
   getShowNewsWidget,
   getShowWeatherWidget,
@@ -77,6 +78,7 @@ const EmptyChat = () => {
       </div>
       <div className="flex flex-col items-center justify-center min-h-screen max-w-screen-sm mx-auto p-2 space-y-4">
         <div className="flex flex-col items-center justify-center w-full space-y-2">
+          <UttaramLogo className="w-48 h-auto mb-2 text-black dark:text-white" />
           <h2 className="text-black/70 dark:text-white/70 text-3xl font-medium text-center">
             {greeting}
           </h2>

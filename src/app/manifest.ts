@@ -34,6 +34,12 @@ export default function manifest(): MetadataRoute.Manifest {
     ],
     icons: [
       {
+        src: '/icon.svg',
+        sizes: 'any',
+        type: 'image/svg+xml',
+        purpose: 'any',
+      },
+      {
         src: '/icon-50.png',
         sizes: '50x50',
         type: 'image/png' as const,
@@ -44,14 +50,13 @@ export default function manifest(): MetadataRoute.Manifest {
         type: 'image/png',
       },
       {
-        src: '/icon.png',
-        sizes: '440x440',
+        src: '/icon-180.png',
+        sizes: '180x180',
         type: 'image/png',
-        purpose: 'any',
       },
       {
         src: '/icon.png',
-        sizes: '180x180',
+        sizes: '440x440',
         type: 'image/png',
         purpose: 'any',
       },

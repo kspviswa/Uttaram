@@ -1,6 +1,6 @@
 services:
   vane:
-    image: kspviswa/uttaram-gold
+    image: kspviswa/uttaram
     build:
       context: .
     ports:

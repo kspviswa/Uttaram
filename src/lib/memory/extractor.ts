@@ -1,8 +1,8 @@
 import z from 'zod';
 import ModelRegistry from '@/lib/models/registry';
-import configManager from '@/lib/config';
 import memoryStore from './store';
 import { MemoryCategory } from './types';
+import { getAllSettings } from '@/lib/config/settings';
 
 const extractionSchema = z.object({
   memories: z.array(
@@ -49,47 +49,37 @@ export async function extractMemories(): Promise<{
   extracted: number;
   errors: number;
 }> {
-  const registry = new ModelRegistry();
-  const config = configManager.getCurrentConfig();
-  const allProviders = config.modelProviders;
+  const settings = await getAllSettings();
+  const chatProviderId = settings.chatModelProviderId;
+  const chatModelKey = settings.chatModelKey;
 
-  const chatProvider = allProviders.find(
-    (p: any) => p.chatModels?.length > 0 && p.config?.apiKey,
-  );
-  const embedProvider = allProviders.find(
-    (p: any) => p.embeddingModels?.length > 0 && p.config?.apiKey,
-  );
-
-  if (!chatProvider || !embedProvider) {
-    console.log(
-      '[Memory] No fully configured providers found, skipping extraction',
-    );
+  if (!chatProviderId || !chatModelKey) {
+    console.log('[Memory] No chat model configured in settings, skipping');
     return { extracted: 0, errors: 0 };
   }
 
-  let llm = null;
-  try {
-    llm = await registry.loadChatModel(
-      chatProvider.id,
-      chatProvider.chatModels[0].key,
-    );
-  } catch (err) {
-    console.error('[Memory] Failed to load chat model for extraction:', err);
-    return { extracted: 0, errors: 1 };
+  const registry = new ModelRegistry();
+
+  if (registry.activeProviders.length === 0) {
+    console.log('[Memory] No active providers found, skipping extraction');
+    return { extracted: 0, errors: 0 };
   }
 
+  const llm = await registry.loadChatModel(chatProviderId, chatModelKey);
+
   let embeddingModel = null;
-  try {
-    embeddingModel = await registry.loadEmbeddingModel(
-      embedProvider.id,
-      embedProvider.embeddingModels[0].key,
-    );
-    memoryStore.setEmbeddingModel(embeddingModel);
-  } catch (err) {
-    console.error(
-      '[Memory] Failed to load embedding model for extraction:',
-      err,
-    );
+  for (const p of registry.activeProviders) {
+    try {
+      const models = await p.provider.getModelList();
+      if (models.embedding.length > 0) {
+        embeddingModel = await registry.loadEmbeddingModel(p.id, models.embedding[0].key);
+        memoryStore.setEmbeddingModel(embeddingModel);
+        console.log(`[Memory] Using embedding model: ${p.name} / ${models.embedding[0].key}`);
+        break;
+      }
+    } catch (err) {
+      console.warn(`[Memory] Provider ${p.name} has no usable embedding model:`, err);
+    }
   }
 
   const unprocessed = await memoryStore.getUnprocessedMessages();
@@ -100,7 +90,7 @@ export async function extractMemories(): Promise<{
   }
 
   console.log(
-    `[Memory] Processing ${unprocessed.length} unprocessed messages`,
+    `[Memory] Processing ${unprocessed.length} unprocessed messages with chat model ${chatProviderId}/${chatModelKey}`,
   );
 
   const BATCH_SIZE = 15;
@@ -112,7 +102,7 @@ export async function extractMemories(): Promise<{
     const messagesText = batch.map((m) => m.query).join('\n---\n');
 
     try {
-      const result = (await llm!.generateObject({
+      const result = (await llm.generateObject({
         messages: [
           { role: 'system', content: buildExtractionPrompt(messagesText) },
           { role: 'user', content: 'Extract personal facts from these messages.' },

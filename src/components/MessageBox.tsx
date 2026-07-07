@@ -1,7 +1,7 @@
 'use client';
 
 /* eslint-disable @next/next/no-img-element */
-import React, { MutableRefObject } from 'react';
+import React, { MutableRefObject, useState } from 'react';
 import { cn } from '@/lib/utils';
 import {
   BookCopy,
@@ -11,6 +11,8 @@ import {
   Layers3,
   Plus,
   CornerDownRight,
+  Copy as CopyIcon,
+  Check,
 } from 'lucide-react';
 import Markdown, { MarkdownToJSX, RuleType } from 'markdown-to-jsx';
 import Copy from './MessageActions/Copy';
@@ -77,7 +79,14 @@ const MessageBox = ({
   const markdownOverrides: MarkdownToJSX.Options = {
     renderRule(next, node, renderChildren, state) {
       if (node.type === RuleType.codeInline) {
-        return `\`${node.text}\``;
+        return (
+          <code
+            key={state.key}
+            className="px-1.5 py-0.5 rounded-md text-sm bg-light-200/70 dark:bg-dark-200/70 text-black dark:text-white font-mono"
+          >
+            {node.text}
+          </code>
+        );
       }
 
       if (node.type === RuleType.codeBlock) {
@@ -100,15 +109,58 @@ const MessageBox = ({
       citation: {
         component: Citation,
       },
+      code: {
+        component: ({ children, className }: { children: React.ReactNode; className?: string }) => {
+          const lang = className?.replace('lang-', '') || '';
+          if (lang) {
+            return <CodeBlock language={lang}>{children}</CodeBlock>;
+          }
+          return (
+            <code className="px-1.5 py-0.5 rounded-md text-sm bg-light-200/70 dark:bg-dark-200/70 text-black dark:text-white font-mono">
+              {children}
+            </code>
+          );
+        },
+      },
     },
   };
+
+  const [queryExpanded, setQueryExpanded] = useState(false);
+  const [queryCopied, setQueryCopied] = useState(false);
+  const query = section.message.query;
+  const QUERY_CHAR_LIMIT = 200;
+  const isLongQuery = query.length > QUERY_CHAR_LIMIT;
+  const displayQuery = isLongQuery && !queryExpanded ? query.slice(0, QUERY_CHAR_LIMIT) + '...' : query;
 
   return (
     <div className="space-y-6">
       <div className={'w-full pt-8 break-words'}>
-        <h2 className="text-black dark:text-white font-medium text-3xl lg:w-9/12">
-          {section.message.query}
-        </h2>
+        <div className="flex items-start gap-2 lg:w-9/12">
+          <h2 className="text-black dark:text-white font-medium text-3xl flex-1 min-w-0">
+            {displayQuery}
+          </h2>
+          <div className="flex items-center gap-1 pt-1 flex-shrink-0">
+            <button
+              onClick={() => {
+                navigator.clipboard.writeText(query);
+                setQueryCopied(true);
+                setTimeout(() => setQueryCopied(false), 1500);
+              }}
+              className="p-1.5 text-black/40 dark:text-white/40 hover:text-black/70 dark:hover:text-white/70 rounded-lg hover:bg-light-secondary dark:hover:bg-dark-secondary transition-colors"
+              title="Copy prompt"
+            >
+              {queryCopied ? <Check size={14} /> : <CopyIcon size={14} />}
+            </button>
+          </div>
+        </div>
+        {isLongQuery && (
+          <button
+            onClick={() => setQueryExpanded(!queryExpanded)}
+            className="mt-1 text-xs text-[#24A0ED] hover:underline"
+          >
+            {queryExpanded ? 'Show less' : 'Show more'}
+          </button>
+        )}
       </div>
 
       <div className="flex flex-col space-y-9 lg:space-y-0 lg:flex-row lg:justify-between lg:space-x-9">

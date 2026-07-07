@@ -18,6 +18,16 @@ const emitClientConfigChanged = () => {
   }
 };
 
+const saveToApi = async (key: string, value: any) => {
+  const res = await fetch('/api/settings', {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ [key]: value }),
+  });
+  if (!res.ok) throw new Error('Failed to save settings');
+  return res.json();
+};
+
 const SettingsSelect = ({
   field,
   value,
@@ -36,29 +46,12 @@ const SettingsSelect = ({
     setLoading(true);
     setValue(newValue);
     try {
-      if (field.scope === 'client') {
-        localStorage.setItem(field.key, newValue);
-        if (field.key === 'theme') {
-          setTheme(newValue);
-        }
-        emitClientConfigChanged();
-      } else {
-        const res = await fetch('/api/config', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            key: `${dataAdd}.${field.key}`,
-            value: newValue,
-          }),
-        });
-
-        if (!res.ok) {
-          console.error('Failed to save config:', await res.text());
-          throw new Error('Failed to save configuration');
-        }
+      localStorage.setItem(field.key, newValue);
+      if (field.key === 'theme') {
+        setTheme(newValue);
       }
+      emitClientConfigChanged();
+      await saveToApi(field.key, newValue);
     } catch (error) {
       console.error('Error saving config:', error);
       toast.error('Failed to save configuration.');
@@ -111,26 +104,9 @@ const SettingsInput = ({
     setLoading(true);
     setValue(newValue);
     try {
-      if (field.scope === 'client') {
-        localStorage.setItem(field.key, newValue);
-        emitClientConfigChanged();
-      } else {
-        const res = await fetch('/api/config', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            key: `${dataAdd}.${field.key}`,
-            value: newValue,
-          }),
-        });
-
-        if (!res.ok) {
-          console.error('Failed to save config:', await res.text());
-          throw new Error('Failed to save configuration');
-        }
-      }
+      localStorage.setItem(field.key, newValue);
+      emitClientConfigChanged();
+      await saveToApi(field.key, newValue);
     } catch (error) {
       console.error('Error saving config:', error);
       toast.error('Failed to save configuration.');
@@ -188,26 +164,9 @@ const SettingsTextarea = ({
     setLoading(true);
     setValue(newValue);
     try {
-      if (field.scope === 'client') {
-        localStorage.setItem(field.key, newValue);
-        emitClientConfigChanged();
-      } else {
-        const res = await fetch('/api/config', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            key: `${dataAdd}.${field.key}`,
-            value: newValue,
-          }),
-        });
-
-        if (!res.ok) {
-          console.error('Failed to save config:', await res.text());
-          throw new Error('Failed to save configuration');
-        }
-      }
+      localStorage.setItem(field.key, newValue);
+      emitClientConfigChanged();
+      await saveToApi(field.key, newValue);
     } catch (error) {
       console.error('Error saving config:', error);
       toast.error('Failed to save configuration.');
@@ -265,26 +224,9 @@ const SettingsSwitch = ({
     setLoading(true);
     setValue(newValue);
     try {
-      if (field.scope === 'client') {
-        localStorage.setItem(field.key, String(newValue));
-        emitClientConfigChanged();
-      } else {
-        const res = await fetch('/api/config', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            key: `${dataAdd}.${field.key}`,
-            value: newValue,
-          }),
-        });
-
-        if (!res.ok) {
-          console.error('Failed to save config:', await res.text());
-          throw new Error('Failed to save configuration');
-        }
-      }
+      localStorage.setItem(field.key, String(newValue));
+      emitClientConfigChanged();
+      await saveToApi(field.key, newValue);
     } catch (error) {
       console.error('Error saving config:', error);
       toast.error('Failed to save configuration.');

@@ -21,7 +21,7 @@ import {
 } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { toast } from 'sonner';
 
 export interface Chat {
@@ -223,6 +223,8 @@ const MoveToProjectDropdown = ({
   onMoved: () => void;
 }) => {
   const [open, setOpen] = useState(false);
+  const btnRef = useRef<HTMLButtonElement>(null);
+  const [position, setPosition] = useState({ top: 0, left: 0 });
 
   const handleMove = async (projectId: string | null) => {
     try {
@@ -240,10 +242,15 @@ const MoveToProjectDropdown = ({
   };
 
   return (
-    <div className="relative">
+    <div className="relative inline-block">
       <button
+        ref={btnRef}
         onClick={(e) => {
           e.preventDefault();
+          if (!open && btnRef.current) {
+            const rect = btnRef.current.getBoundingClientRect();
+            setPosition({ top: rect.bottom + 4, left: rect.left });
+          }
           setOpen(!open);
         }}
         className="inline-flex items-center gap-1 text-xs text-black/50 dark:text-white/50 hover:text-black dark:hover:text-white transition-colors px-1.5 py-0.5 rounded hover:bg-light-200 dark:hover:bg-dark-200"
@@ -253,8 +260,11 @@ const MoveToProjectDropdown = ({
       </button>
       {open && (
         <>
-          <div className="fixed inset-0 z-10" onClick={() => setOpen(false)} />
-          <div className="absolute left-0 top-full mt-1 z-20 min-w-[160px] rounded-lg border border-light-200 dark:border-dark-200 bg-light-secondary dark:bg-dark-secondary shadow-lg py-1">
+          <div className="fixed inset-0 z-50" onClick={() => setOpen(false)} />
+          <div
+            className="fixed z-50 min-w-[160px] rounded-lg border border-light-200 dark:border-dark-200 bg-light-secondary dark:bg-dark-secondary shadow-lg py-1"
+            style={{ top: position.top, left: position.left }}
+          >
             <button
               onClick={() => handleMove(null)}
               className="w-full text-left px-3 py-1.5 text-sm text-black/70 dark:text-white/70 hover:bg-light-200 dark:hover:bg-dark-200 transition-colors"

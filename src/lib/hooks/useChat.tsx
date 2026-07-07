@@ -9,6 +9,7 @@ import {
   useMemo,
   useRef,
   useState,
+  useCallback,
 } from 'react';
 import crypto from 'crypto';
 import { useParams, useSearchParams } from 'next/navigation';
@@ -18,6 +19,7 @@ import { MinimalProvider } from '../models/types';
 import { getAutoMediaSearch } from '../config/clientRegistry';
 import { applyPatch } from 'rfc6902';
 import { Widget } from '@/components/ChatWindow';
+import { convertLatex } from '@/lib/latex';
 
 export type Section = {
   message: Message;
@@ -59,6 +61,8 @@ type ChatContext = {
   rewrite: (messageId: string) => void;
   setChatModelProvider: (provider: ChatModelProvider) => void;
   setEmbeddingModelProvider: (provider: EmbeddingModelProvider) => void;
+  stop: () => void;
+  processingStartTime: number | null;
 };
 
 export interface File {
@@ -84,12 +88,18 @@ const checkConfig = async (
   setHasError: (hasError: boolean) => void,
 ) => {
   try {
-    let chatModelKey = localStorage.getItem('chatModelKey');
-    let chatModelProviderId = localStorage.getItem('chatModelProviderId');
-    let embeddingModelKey = localStorage.getItem('embeddingModelKey');
-    let embeddingModelProviderId = localStorage.getItem(
-      'embeddingModelProviderId',
-    );
+    let settingsData: Record<string, any> = {};
+    try {
+      const settingsRes = await fetch('/api/settings');
+      if (settingsRes.ok) {
+        settingsData = (await settingsRes.json()).data || {};
+      }
+    } catch {}
+
+    let chatModelKey = settingsData.chatModelKey || localStorage.getItem('chatModelKey');
+    let chatModelProviderId = settingsData.chatModelProviderId || localStorage.getItem('chatModelProviderId');
+    let embeddingModelKey = settingsData.embeddingModelKey || localStorage.getItem('embeddingModelKey');
+    let embeddingModelProviderId = settingsData.embeddingModelProviderId || localStorage.getItem('embeddingModelProviderId');
 
     const res = await fetch(`/api/providers`, {
       headers: {
@@ -152,6 +162,17 @@ const checkConfig = async (
     localStorage.setItem('embeddingModelKey', embeddingModelKey);
     localStorage.setItem('embeddingModelProviderId', embeddingModelProviderId);
 
+    fetch('/api/settings', {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        chatModelProviderId,
+        chatModelKey,
+        embeddingModelProviderId,
+        embeddingModelKey,
+      }),
+    }).catch(() => {});
+
     setChatModelProvider({
       key: chatModelKey,
       providerId: chatModelProviderId,
@@ -199,6 +220,13 @@ const loadMessages = async (
   const messages = data.messages as Message[];
 
   setMessages(messages);
+
+  if (messages.length > 0) {
+    const last = messages[messages.length - 1];
+    if (last.status !== 'answering') {
+      localStorage.removeItem(`chatTimer-${chatId}`);
+    }
+  }
 
   const history: [string, string][] = [];
   messages.forEach((msg) => {
@@ -265,6 +293,8 @@ export const chatContext = createContext<ChatContext>({
   setChatModelProvider: () => {},
   setEmbeddingModelProvider: () => {},
   setResearchEnded: () => {},
+  stop: () => {},
+  processingStartTime: null,
 });
 
 export const ChatProvider = ({ children }: { children: React.ReactNode }) => {
@@ -294,6 +324,7 @@ export const ChatProvider = ({ children }: { children: React.ReactNode }) => {
   const [isMessagesLoaded, setIsMessagesLoaded] = useState(false);
 
   const [notFound, setNotFound] = useState(false);
+  const [processingStartTime, setProcessingStartTime] = useState<number | null>(null);
 
   const [chatModelProvider, setChatModelProvider] = useState<ChatModelProvider>(
     {
@@ -386,7 +417,7 @@ export const ChatProvider = ({ children }: { children: React.ReactNode }) => {
             speechMessage += block.data.replace(regex, '');
           }
 
-          textBlocks.push(processedText);
+          textBlocks.push(convertLatex(processedText));
         } else if (block.type === 'suggestion') {
           suggestions = block.data;
         }
@@ -405,6 +436,31 @@ export const ChatProvider = ({ children }: { children: React.ReactNode }) => {
 
   const isReconnectingRef = useRef(false);
   const handledMessageEndRef = useRef<Set<string>>(new Set());
+  const abortControllerRef = useRef<AbortController | null>(null);
+
+  const TIMER_KEY_PREFIX = 'chatTimer-';
+
+  const clearTimer = useCallback((id: string) => {
+    localStorage.removeItem(`${TIMER_KEY_PREFIX}${id}`);
+    setProcessingStartTime(null);
+  }, []);
+
+  const stop = useCallback(() => {
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort();
+      abortControllerRef.current = null;
+    }
+    if (chatId) clearTimer(chatId);
+    setLoading(false);
+    setResearchEnded(true);
+    setMessages((prev) =>
+      prev.map((msg) =>
+        msg.status === 'answering'
+          ? { ...msg, status: 'completed' as const }
+          : msg,
+      ),
+    );
+  }, [chatId, clearTimer]);
 
   const checkReconnect = async () => {
     if (isReconnectingRef.current) return;
@@ -419,6 +475,15 @@ export const ChatProvider = ({ children }: { children: React.ReactNode }) => {
         setLoading(true);
         setResearchEnded(false);
         setMessageAppeared(false);
+
+        const storedTimer = localStorage.getItem(`${TIMER_KEY_PREFIX}${chatId}`);
+        if (storedTimer) {
+          setProcessingStartTime(parseInt(storedTimer, 10));
+        } else {
+          const now = Date.now();
+          localStorage.setItem(`${TIMER_KEY_PREFIX}${chatId}`, now.toString());
+          setProcessingStartTime(now);
+        }
 
         isReconnectingRef.current = true;
 
@@ -534,6 +599,27 @@ export const ChatProvider = ({ children }: { children: React.ReactNode }) => {
       setIsReady(false);
     }
   }, [isMessagesLoaded, isConfigReady, newChatCreated]);
+
+  useEffect(() => {
+    if (!loading || !processingStartTime) return;
+    const id = setInterval(() => {
+      const elapsed = Math.floor((Date.now() - processingStartTime) / 1000);
+      const mins = Math.floor(elapsed / 60);
+      const secs = elapsed % 60;
+      const timeStr = mins > 0 ? `${mins}m ${secs.toString().padStart(2, '0')}` : `${secs}s`;
+      document.title = `⏳ ${timeStr} - Vane`;
+    }, 1000);
+    return () => {
+      clearInterval(id);
+      if (sections[0]?.message?.query) {
+        const q = sections[0].message.query.length > 30
+          ? sections[0].message.query.substring(0, 30).trim() + '...'
+          : sections[0].message.query;
+        document.title = `${q} - Vane`;
+      }
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [loading, processingStartTime]);
 
   const rewrite = (messageId: string) => {
     const index = messages.findIndex((msg) => msg.messageId === messageId);
@@ -674,6 +760,19 @@ export const ChatProvider = ({ children }: { children: React.ReactNode }) => {
 
         setLoading(false);
 
+        if (chatId) clearTimer(chatId);
+        const elapsed = processingStartTime
+          ? Math.floor((Date.now() - processingStartTime) / 1000)
+          : 0;
+        const mins = Math.floor(elapsed / 60);
+        const secs = elapsed % 60;
+        const timeStr = mins > 0 ? `${mins}m ${secs}s` : `${secs}s`;
+        toast.success(`Answer ready (${timeStr})`);
+        if (typeof document !== 'undefined') {
+          const q = message.query.length > 30 ? message.query.substring(0, 30).trim() + '...' : message.query;
+          document.title = `✓ ${q} - Vane`;
+        }
+
         const lastMsg = messagesRef.current[messagesRef.current.length - 1];
 
         const autoMediaSearch = getAutoMediaSearch();
@@ -732,6 +831,9 @@ export const ChatProvider = ({ children }: { children: React.ReactNode }) => {
     setLoading(true);
     setResearchEnded(false);
     setMessageAppeared(false);
+    const now = Date.now();
+    localStorage.setItem(`${TIMER_KEY_PREFIX}${chatId}`, now.toString());
+    setProcessingStartTime(now);
 
     if (messages.length <= 1) {
       window.history.replaceState(null, '', `/c/${chatId}`);
@@ -754,7 +856,9 @@ export const ChatProvider = ({ children }: { children: React.ReactNode }) => {
 
     const messageIndex = messages.findIndex((m) => m.messageId === messageId);
 
+    abortControllerRef.current = new AbortController();
     const res = await fetch('/api/chat', {
+      signal: abortControllerRef.current.signal,
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -804,23 +908,38 @@ export const ChatProvider = ({ children }: { children: React.ReactNode }) => {
 
     const messageHandler = getMessageHandler(newMessage);
 
-    while (true) {
-      const { value, done } = await reader.read();
-      if (done) break;
+    try {
+      while (true) {
+        const { value, done } = await reader.read();
+        if (done) break;
 
-      partialChunk += decoder.decode(value, { stream: true });
+        partialChunk += decoder.decode(value, { stream: true });
 
-      try {
-        const messages = partialChunk.split('\n');
-        for (const msg of messages) {
-          if (!msg.trim()) continue;
-          const json = JSON.parse(msg);
-          messageHandler(json);
+        try {
+          const messages = partialChunk.split('\n');
+          for (const msg of messages) {
+            if (!msg.trim()) continue;
+            const json = JSON.parse(msg);
+            messageHandler(json);
+          }
+          partialChunk = '';
+        } catch (error) {
+          console.warn('Incomplete JSON, waiting for next chunk...');
         }
-        partialChunk = '';
-      } catch (error) {
-        console.warn('Incomplete JSON, waiting for next chunk...');
       }
+    } catch (error: any) {
+      if (error.name === 'AbortError') {
+        setMessages((prev) =>
+          prev.map((msg) =>
+            msg.messageId === messageId
+              ? { ...msg, status: 'completed' as const }
+              : msg,
+          ),
+        );
+      }
+    } finally {
+      abortControllerRef.current = null;
+      setLoading(false);
     }
   };
 
@@ -853,6 +972,8 @@ export const ChatProvider = ({ children }: { children: React.ReactNode }) => {
         setEmbeddingModelProvider,
         researchEnded,
         setResearchEnded,
+        stop,
+        processingStartTime,
       }}
     >
       {children}

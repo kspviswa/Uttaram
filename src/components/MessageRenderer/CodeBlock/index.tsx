@@ -32,9 +32,10 @@ const CodeBlock = ({
   }, [mounted, resolvedTheme]);
 
   return (
-    <div className="relative">
+    <div className="relative group">
       <button
-        className="absolute top-2 right-2 p-1"
+        className="absolute top-2 right-2 p-1.5 rounded-md bg-black/20 dark:bg-white/10 opacity-0 group-hover:opacity-100 transition-opacity duration-200"
+        title="Copy code"
         onClick={() => {
           navigator.clipboard.writeText(children as string);
           setCopied(true);
@@ -44,19 +45,25 @@ const CodeBlock = ({
         {copied ? (
           <CheckIcon
             size={16}
-            className="absolute top-2 right-2 text-black/70 dark:text-white/70"
+            className="text-white/90"
           />
         ) : (
           <CopyIcon
             size={16}
-            className="absolute top-2 right-2 transition duration-200 text-black/70 dark:text-white/70 hover:text-gray-800/70 hover:dark:text-gray-300/70"
+            className="text-white/70 hover:text-white transition-colors duration-200"
           />
         )}
       </button>
+      {language && (
+        <span className="absolute top-2 left-3 text-[10px] text-white/40 font-mono uppercase tracking-wider select-none">
+          {language}
+        </span>
+      )}
       <SyntaxHighlighterComponent
         language={language}
         style={syntaxTheme}
         showInlineLineNumbers
+        customStyle={{ paddingTop: language ? '2rem' : undefined }}
       >
         {children as string}
       </SyntaxHighlighterComponent>

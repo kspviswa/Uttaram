@@ -74,16 +74,52 @@ const SettingsDialogue = ({
     if (isOpen) {
       const fetchConfig = async () => {
         try {
-          const res = await fetch('/api/config', {
-            method: 'GET',
-            headers: {
-              'Content-Type': 'application/json',
+          const [configRes, settingsRes] = await Promise.all([
+            fetch('/api/config', {
+              method: 'GET',
+              headers: { 'Content-Type': 'application/json' },
+            }),
+            fetch('/api/settings', {
+              method: 'GET',
+              headers: { 'Content-Type': 'application/json' },
+            }),
+          ]);
+
+          const configData = await configRes.json();
+          const settingsData = await settingsRes.json();
+
+          const merged = {
+            ...configData,
+            values: {
+              ...configData.values,
+              preferences: {
+                ...configData.values.preferences,
+                ...(settingsData.data
+                  ? {
+                      theme: settingsData.data.theme,
+                      measureUnit: settingsData.data.measureUnit,
+                      autoMediaSearch: settingsData.data.autoMediaSearch,
+                      showWeatherWidget: settingsData.data.showWeatherWidget,
+                      showNewsWidget: settingsData.data.showNewsWidget,
+                    }
+                  : {}),
+              },
+              personalization: {
+                ...configData.values.personalization,
+                ...(settingsData.data
+                  ? {
+                      userName: settingsData.data.userName,
+                      location: settingsData.data.location,
+                      systemInstructions: settingsData.data.systemInstructions,
+                      aboutMe: settingsData.data.aboutMe,
+                      enableMemories: settingsData.data.enableMemories,
+                    }
+                  : {}),
+              },
             },
-          });
+          };
 
-          const data = await res.json();
-
-          setConfig(data);
+          setConfig(merged);
         } catch (error) {
           console.error('Error fetching config:', error);
           toast.error('Failed to load configuration.');
@@ -109,7 +145,7 @@ const SettingsDialogue = ({
         transition={{ duration: 0.1 }}
         className="fixed inset-0 flex w-screen items-center justify-center p-4 bg-black/30 backdrop-blur-sm"
       >
-        <DialogPanel className="space-y-4 border border-light-200 dark:border-dark-200 bg-light-primary dark:bg-dark-primary backdrop-blur-lg rounded-xl h-[calc(100vh-2%)] w-[calc(100vw-2%)] safe-bottom md:h-[calc(100vh-7%)] md:w-[calc(100vw-7%)] lg:h-[calc(100vh-20%)] lg:w-[calc(100vw-30%)] overflow-hidden flex flex-col">
+        <DialogPanel className="space-y-4 border border-light-200 dark:border-dark-200 bg-light-primary dark:bg-dark-primary backdrop-blur-lg rounded-xl h-[calc(100dvh-2%)] w-[calc(100vw-2%)] safe-bottom md:h-[calc(100dvh-7%)] md:w-[calc(100vw-7%)] lg:h-[calc(100dvh-20%)] lg:w-[calc(100vw-30%)] overflow-hidden flex flex-col">
           {isLoading ? (
             <div className="flex items-center justify-center h-full w-full">
               <Loader />
@@ -165,15 +201,16 @@ const SettingsDialogue = ({
                 </div>
               </div>
               <div className="w-full flex flex-col overflow-hidden">
-                <div className="flex flex-row lg:hidden w-full justify-between px-[20px] my-4 flex-shrink-0">
+                <div className="flex flex-row lg:hidden w-full items-center justify-between px-4 py-3 flex-shrink-0 border-b border-light-200/60 dark:border-dark-200/60">
                   <button
                     onClick={() => setIsOpen(false)}
-                    className="group flex flex-row items-center hover:bg-light-200 hover:dark:bg-dark-200 rounded-lg mr-[40%]"
+                    className="group flex flex-row items-center gap-1.5 hover:bg-light-200 hover:dark:bg-dark-200 rounded-lg px-2 py-1.5"
                   >
                     <ArrowLeft
                       size={18}
                       className="text-black/50 dark:text-white/50 group-hover:text-black/70 group-hover:dark:text-white/70"
                     />
+                    <span className="text-sm text-black/50 dark:text-white/50 group-hover:text-black/70 group-hover:dark:text-white/70">Close</span>
                   </button>
                   <Select
                     options={sections.map((section) => {

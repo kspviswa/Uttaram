@@ -15,6 +15,7 @@ const Copy = ({
 
   return (
     <button
+      title="Copy answer with citations"
       onClick={() => {
         const sources = section.message.responseBlocks.filter(
           (b) => b.type === 'source' && b.data.length > 0,

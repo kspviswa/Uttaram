@@ -24,29 +24,29 @@ const ModelSelect = ({
     setSelectedModel(newValue);
 
     try {
-      if (type === 'chat') {
-        const providerId = newValue.split('/')[0];
-        const modelKey = newValue.split('/').slice(1).join('/');
+      const providerId = newValue.split('/')[0];
+      const modelKey = newValue.split('/').slice(1).join('/');
 
+      if (type === 'chat') {
         localStorage.setItem('chatModelProviderId', providerId);
         localStorage.setItem('chatModelKey', modelKey);
-
-        setChatModelProvider({
-          providerId: providerId,
-          key: modelKey,
-        });
+        setChatModelProvider({ providerId, key: modelKey });
       } else {
-        const providerId = newValue.split('/')[0];
-        const modelKey = newValue.split('/').slice(1).join('/');
-
         localStorage.setItem('embeddingModelProviderId', providerId);
         localStorage.setItem('embeddingModelKey', modelKey);
-
-        setEmbeddingModelProvider({
-          providerId: providerId,
-          key: modelKey,
-        });
+        setEmbeddingModelProvider({ providerId, key: modelKey });
       }
+
+      await fetch('/api/settings', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          chatModelProviderId: type === 'chat' ? providerId : localStorage.getItem('embeddingModelProviderId'),
+          chatModelKey: type === 'chat' ? modelKey : localStorage.getItem('embeddingModelKey'),
+          embeddingModelProviderId: type === 'embedding' ? providerId : localStorage.getItem('chatModelProviderId'),
+          embeddingModelKey: type === 'embedding' ? modelKey : localStorage.getItem('chatModelKey'),
+        }),
+      });
     } catch (error) {
       console.error('Error saving config:', error);
       toast.error('Failed to save configuration.');

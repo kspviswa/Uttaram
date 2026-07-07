@@ -46,6 +46,12 @@ export const memories = sqliteTable('memories', {
   updatedAt: text('updatedAt').notNull(),
 });
 
+export const settings = sqliteTable('settings', {
+  id: integer('id').primaryKey().default(1),
+  data: text('data', { mode: 'json' }).$type<Record<string, any>>().notNull().default({}),
+  updatedAt: text('updatedAt').notNull(),
+});
+
 export const chats = sqliteTable('chats', {
   id: text('id').primaryKey(),
   title: text('title').notNull(),

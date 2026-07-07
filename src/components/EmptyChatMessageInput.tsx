@@ -1,4 +1,4 @@
-import { ArrowRight } from 'lucide-react';
+import { ArrowRight, StopCircle } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 import TextareaAutosize from 'react-textarea-autosize';
 import Sources from './MessageInputActions/Sources';
@@ -8,9 +8,8 @@ import { useChat } from '@/lib/hooks/useChat';
 import ModelSelector from './MessageInputActions/ChatModelSelector';
 
 const EmptyChatMessageInput = () => {
-  const { sendMessage } = useChat();
+  const { sendMessage, loading, stop } = useChat();
 
-  /* const [copilotEnabled, setCopilotEnabled] = useState(false); */
   const [message, setMessage] = useState('');
 
   const inputRef = useRef<HTMLTextAreaElement | null>(null);
@@ -42,11 +41,13 @@ const EmptyChatMessageInput = () => {
   return (
     <form
       onSubmit={(e) => {
+        if (loading) return;
         e.preventDefault();
         sendMessage(message);
         setMessage('');
       }}
       onKeyDown={(e) => {
+        if (loading) return;
         if (e.key === 'Enter' && !e.shiftKey) {
           e.preventDefault();
           sendMessage(message);
@@ -61,8 +62,9 @@ const EmptyChatMessageInput = () => {
           value={message}
           onChange={(e) => setMessage(e.target.value)}
           minRows={2}
-          className="px-2 bg-transparent placeholder:text-[15px] placeholder:text-black/50 dark:placeholder:text-white/50 text-sm text-black dark:text-white resize-none focus:outline-none w-full max-h-24 lg:max-h-36 xl:max-h-48"
-          placeholder="Ask anything..."
+          disabled={loading}
+          className="px-2 bg-transparent placeholder:text-[15px] placeholder:text-black/50 dark:placeholder:text-white/50 text-sm text-black dark:text-white resize-none focus:outline-none w-full max-h-24 lg:max-h-36 xl:max-h-48 disabled:opacity-50"
+          placeholder={loading ? 'Generating response...' : 'Ask anything...'}
         />
         <div className="flex flex-row items-center justify-between mt-4">
           <Optimization />
@@ -73,10 +75,16 @@ const EmptyChatMessageInput = () => {
               <Attach />
             </div>
             <button
-              disabled={message.trim().length === 0}
-              className="bg-sky-500 text-white disabled:text-black/50 dark:disabled:text-white/50 disabled:bg-[#e0e0dc] dark:disabled:bg-[#ececec21] hover:bg-opacity-85 transition duration-100 rounded-full p-2"
+              type="button"
+              disabled={!loading && message.trim().length === 0}
+              onClick={loading ? stop : () => { sendMessage(message); setMessage(''); }}
+              className={`rounded-full p-2 transition duration-100 ${
+                loading
+                  ? 'bg-red-500 text-white hover:bg-red-600'
+                  : 'bg-sky-500 text-white disabled:text-black/50 dark:disabled:text-white/50 disabled:bg-[#e0e0dc] dark:disabled:bg-[#ececec21] hover:bg-opacity-85'
+              }`}
             >
-              <ArrowRight className="bg-background" size={17} />
+              {loading ? <StopCircle className="bg-background" size={17} /> : <ArrowRight className="bg-background" size={17} />}
             </button>
           </div>
         </div>

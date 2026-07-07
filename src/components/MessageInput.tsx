@@ -1,12 +1,12 @@
 import { cn } from '@/lib/utils';
-import { ArrowUp } from 'lucide-react';
+import { ArrowUp, StopCircle } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 import TextareaAutosize from 'react-textarea-autosize';
 import AttachSmall from './MessageInputActions/AttachSmall';
 import { useChat } from '@/lib/hooks/useChat';
 
 const MessageInput = () => {
-  const { loading, sendMessage } = useChat();
+  const { loading, sendMessage, stop } = useChat();
 
   const [copilotEnabled, setCopilotEnabled] = useState(false);
   const [message, setMessage] = useState('');
@@ -54,7 +54,8 @@ const MessageInput = () => {
         setMessage('');
       }}
       onKeyDown={(e) => {
-        if (e.key === 'Enter' && !e.shiftKey && !loading) {
+        if (loading) return;
+        if (e.key === 'Enter' && !e.shiftKey) {
           e.preventDefault();
           sendMessage(message);
           setMessage('');
@@ -78,20 +79,30 @@ const MessageInput = () => {
       />
       {mode === 'single' && (
         <button
-          disabled={message.trim().length === 0 || loading}
-          className="bg-[#24A0ED] text-white disabled:text-black/50 dark:disabled:text-white/50 hover:bg-opacity-85 transition duration-100 disabled:bg-[#e0e0dc79] dark:disabled:bg-[#ececec21] rounded-full p-2"
+          disabled={!loading && message.trim().length === 0}
+          onClick={loading ? stop : undefined}
+          className={`rounded-full p-2 transition duration-100 ${
+            loading
+              ? 'bg-red-500 text-white hover:bg-red-600'
+              : 'bg-[#24A0ED] text-white disabled:text-black/50 dark:disabled:text-white/50 hover:bg-opacity-85 disabled:bg-[#e0e0dc79] dark:disabled:bg-[#ececec21]'
+          }`}
         >
-          <ArrowUp className="bg-background" size={17} />
+          {loading ? <StopCircle className="bg-background" size={17} /> : <ArrowUp className="bg-background" size={17} />}
         </button>
       )}
       {mode === 'multi' && (
         <div className="flex flex-row items-center justify-between w-full pt-2">
           <AttachSmall />
           <button
-            disabled={message.trim().length === 0 || loading}
-            className="bg-[#24A0ED] text-white disabled:text-black/50 dark:disabled:text-white/50 hover:bg-opacity-85 transition duration-100 disabled:bg-[#e0e0dc79] dark:disabled:bg-[#ececec21] rounded-full p-2"
+            disabled={!loading && message.trim().length === 0}
+            onClick={loading ? stop : undefined}
+            className={`rounded-full p-2 transition duration-100 ${
+              loading
+                ? 'bg-red-500 text-white hover:bg-red-600'
+                : 'bg-[#24A0ED] text-white disabled:text-black/50 dark:disabled:text-white/50 hover:bg-opacity-85 disabled:bg-[#e0e0dc79] dark:disabled:bg-[#ececec21]'
+            }`}
           >
-            <ArrowUp className="bg-background" size={17} />
+            {loading ? <StopCircle className="bg-background" size={17} /> : <ArrowUp className="bg-background" size={17} />}
           </button>
         </div>
       )}

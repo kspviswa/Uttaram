@@ -329,15 +329,8 @@ const Page = () => {
             No memories found.
           </p>
           <p className="mt-1 text-black/70 dark:text-white/70 text-sm">
-            Memories are extracted automatically from your conversations, or you
-            can{' '}
-            <button
-              onClick={() => {}}
-              className="text-sky-400 hover:underline"
-            >
-              add one manually
-            </button>
-            .
+            Memories are extracted automatically after each conversation turn,
+            or you can add one manually above.
           </p>
         </div>
       ) : (

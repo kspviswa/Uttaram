@@ -61,7 +61,7 @@ export default function RootLayout({
                   unstyled: true,
                   classNames: {
                     toast:
-                      'bg-light-secondary dark:bg-dark-secondary dark:text-white/70 text-black-70 rounded-lg p-4 flex flex-row items-center space-x-2',
+                      'bg-light-secondary dark:bg-dark-secondary dark:text-white/70 text-black/70 rounded-lg p-4 flex flex-row items-center space-x-2',
                   },
                 }}
               />

@@ -9,7 +9,7 @@ import db from '@/lib/db';
 import { eq } from 'drizzle-orm';
 import { chats } from '@/lib/db/schema';
 import UploadManager from '@/lib/uploads/manager';
-import '@/lib/memory/scheduler';
+import { extractMemories } from '@/lib/memory/extractor';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -99,6 +99,12 @@ const ensureChatExists = async (input: {
         }),
         projectId: input.projectId || null,
       });
+    } else if (exists.title === 'New Chat') {
+      await db
+        .update(chats)
+        .set({ title: input.query })
+        .where(eq(chats.id, input.id))
+        .execute();
     }
   } catch (err) {
     console.error('Failed to check/save chat:', err);
@@ -201,6 +207,9 @@ export const POST = async (req: Request) => {
         );
         writer.close();
         session.removeAllListeners();
+        extractMemories().catch((err) =>
+          console.error('[Chat] Async memory extraction failed:', err),
+        );
       } else if (event === 'error') {
         writer.write(
           encoder.encode(

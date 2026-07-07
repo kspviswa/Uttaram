@@ -480,6 +480,15 @@ export const ChatProvider = ({ children }: { children: React.ReactNode }) => {
       setIsMessagesLoaded(false);
       setNotFound(false);
       setNewChatCreated(false);
+    } else if (!params.chatId && chatId) {
+      setChatId(undefined);
+      setMessages([]);
+      chatHistory.current = [];
+      setFiles([]);
+      setFileIds([]);
+      setIsMessagesLoaded(false);
+      setNotFound(false);
+      setNewChatCreated(false);
     }
   }, [params.chatId, chatId]);
 

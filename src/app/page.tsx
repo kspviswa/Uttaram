@@ -2,8 +2,8 @@ import ChatWindow from '@/components/ChatWindow';
 import { Metadata } from 'next';
 
 export const metadata: Metadata = {
-  title: 'ऊttaram - Direct your curiosity',
-  description: 'ऊttaram is an AI powered answering engine.',
+  title: 'Chat - उत्तारम्',
+  description: 'Chat with the internet, chat with उत्तारम्.',
 };
 
 const Home = () => {

@@ -102,6 +102,7 @@ class SearchAgent {
         embedding: input.config.embedding,
         enableMemories: input.config.enableMemories,
         userProfile: input.config.userProfile,
+        metadata: input.config.metadata,
       });
     } catch (err) {
       console.error('Classifier failed, using defaults:', err);
@@ -234,12 +235,19 @@ class SearchAgent {
         })()
       : '';
 
+    const now = input.config.metadata?.currentDate
+      ? new Date(input.config.metadata.currentDate)
+      : new Date();
+    const timezone = input.config.metadata?.timezone || 'UTC';
+
     const writerPrompt = getWriterPrompt(
       finalContextWithWidgets,
       input.config.systemInstructions,
       input.config.mode,
       memoriesContext,
       userProfileContext,
+      now,
+      timezone,
     );
 
     const answerStream = await withRetryStream(

@@ -12,6 +12,11 @@ export type UserProfile = {
   aboutMe: string;
 };
 
+export type ClientMetadata = {
+  currentDate: string;
+  timezone: string;
+};
+
 export type SearchAgentConfig = {
   sources: SearchSources[];
   fileIds: string[];
@@ -21,6 +26,7 @@ export type SearchAgentConfig = {
   systemInstructions: string;
   userProfile?: UserProfile;
   enableMemories?: boolean;
+  metadata?: ClientMetadata;
 };
 
 export type SearchAgentInput = {
@@ -59,6 +65,7 @@ export type ClassifierInput = {
   chatHistory: ChatTurnMessage[];
   enableMemories?: boolean;
   userProfile?: UserProfile;
+  metadata?: ClientMetadata;
 };
 
 export type ClassifierOutput = {

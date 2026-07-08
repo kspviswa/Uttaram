@@ -56,6 +56,12 @@ const bodySchema = z.object({
     .optional()
     .default({ name: '', location: '', aboutMe: '' }),
   enableMemories: z.boolean().optional().default(true),
+  metadata: z
+    .object({
+      currentDate: z.string(),
+      timezone: z.string(),
+    })
+    .optional(),
 });
 
 type Body = z.infer<typeof bodySchema>;
@@ -255,6 +261,7 @@ export const POST = async (req: Request) => {
         systemInstructions: body.systemInstructions || 'None',
         userProfile: body.userProfile || { name: '', location: '', aboutMe: '' },
         enableMemories: body.enableMemories,
+        metadata: body.metadata,
       },
     });
 

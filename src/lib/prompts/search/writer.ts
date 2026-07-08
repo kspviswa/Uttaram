@@ -4,6 +4,8 @@ export const getWriterPrompt = (
   mode: 'speed' | 'balanced' | 'quality',
   memoriesContext?: string,
   userProfileContext?: string,
+  now?: Date,
+  timezone?: string,
 ) => {
   return `
 You are Vane, an AI model skilled in web search and crafting detailed, engaging, and well-structured answers. You excel at summarizing web pages and extracting relevant information to create professional, blog-style responses.
@@ -73,6 +75,6 @@ ${userProfileContext ? `\n    ### User Profile
     ${context}
     </context>
 
-    Current date & time in ISO format (UTC timezone) is: ${new Date().toISOString()}.
+    Current date & time in ISO format is: ${(now || new Date()).toISOString()}. Timezone: ${timezone || 'UTC'}.
 `;
 };

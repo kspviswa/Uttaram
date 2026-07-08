@@ -69,7 +69,11 @@ export const classify = async (input: ClassifierInput) => {
     return parts.length > 0 ? `\n<user_profile>\n${parts.join('\n')}\n</user_profile>` : '';
   })();
 
-  const userContent = `<conversation_history>\n${formatChatHistoryAsString(input.chatHistory)}\n</conversation_history>\n<user_query>\n${input.query}\n</user_query>${memoriesContext ? `\n<user_memories>\n${memoriesContext}\n</user_memories>` : ''}${userProfileString}`;
+  const dateTimeContext = input.metadata
+    ? `\n<current_date_time>\nCurrent date and time: ${input.metadata.currentDate}\nTimezone: ${input.metadata.timezone}\n</current_date_time>`
+    : `\n<current_date_time>\nCurrent date and time: ${new Date().toISOString()}\nTimezone: UTC\n</current_date_time>`;
+
+  const userContent = `<conversation_history>\n${formatChatHistoryAsString(input.chatHistory)}\n</conversation_history>\n<user_query>\n${input.query}\n</user_query>${memoriesContext ? `\n<user_memories>\n${memoriesContext}\n</user_memories>` : ''}${userProfileString}${dateTimeContext}`;
 
   const output = await withRetry(
     async () =>

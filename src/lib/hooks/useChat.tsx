@@ -907,6 +907,10 @@ export const ChatProvider = ({ children }: { children: React.ReactNode }) => {
         },
         enableMemories:
           localStorage.getItem('enableMemories') !== 'false',
+        metadata: {
+          currentDate: new Date().toISOString(),
+          timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+        },
       }),
     });
 

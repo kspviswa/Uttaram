@@ -68,4 +68,5 @@ export const chats = sqliteTable('chats', {
     .$type<DBFile[]>()
     .default(sql`'[]'`),
   projectId: text('projectId'),
+  parentId: text('parentId'),
 });

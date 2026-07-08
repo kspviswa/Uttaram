@@ -1,0 +1,90 @@
+import db from '@/lib/db';
+import { chats, messages } from '@/lib/db/schema';
+import ModelRegistry from '@/lib/models/registry';
+import { ModelWithProvider } from '@/lib/models/types';
+
+export const POST = async (req: Request) => {
+  try {
+    const body = await req.json();
+    const { messages: sourceMessages, chatId, title, chatModel } = body;
+
+    if (
+      !sourceMessages ||
+      !Array.isArray(sourceMessages) ||
+      sourceMessages.length === 0
+    ) {
+      return Response.json({ message: 'Messages are required' }, { status: 400 });
+    }
+
+    const registry = new ModelRegistry();
+    const llm = await registry.loadChatModel(
+      chatModel.providerId,
+      chatModel.key,
+    );
+
+    const conversationText = sourceMessages
+      .map((msg: any) => `User: ${msg.query}\nAssistant: ${extractText(msg.responseBlocks)}`)
+      .join('\n\n');
+
+    const summaryResult = await llm.generateText({
+      messages: [
+        {
+          role: 'system',
+          content:
+            'You are an expert at summarizing conversations. Provide a concise, well-structured summary that captures the key questions, answers, insights, and conclusions from the conversation. Write in a clear narrative style.',
+        },
+        {
+          role: 'user',
+          content: conversationText,
+        },
+      ],
+    });
+
+    const newChatId = crypto.randomUUID();
+    const now = new Date().toISOString();
+
+    await db.insert(chats).values({
+      id: newChatId,
+      title: title || 'Forked Chat',
+      createdAt: now,
+      sources: [],
+      files: [],
+      projectId: null,
+      parentId: chatId || null,
+    });
+
+    const summaryMessageId = crypto.randomUUID();
+    await db.insert(messages).values({
+      chatId: newChatId,
+      messageId: summaryMessageId,
+      backendId: crypto.randomUUID(),
+      query: 'Forked conversation — summary below',
+      createdAt: now,
+      responseBlocks: [
+        {
+          id: crypto.randomUUID(),
+          type: 'text',
+          data: `## Forked Conversation\n\nThis chat was forked from a previous conversation.\n\n### Summary\n\n${summaryResult.content}`,
+        },
+      ],
+      status: 'completed',
+      phase: 'writing',
+    });
+
+    return Response.json({ chatId: newChatId }, { status: 201 });
+  } catch (err) {
+    console.error('Error forking thread:', err);
+    return Response.json(
+      { message: 'An error occurred while forking thread' },
+      { status: 500 },
+    );
+  }
+};
+
+function extractText(responseBlocks: any[]): string {
+  if (!Array.isArray(responseBlocks)) return '';
+  return responseBlocks
+    .filter((b: any) => b.type === 'text')
+    .map((b: any) => b.data)
+    .join('\n');
+}

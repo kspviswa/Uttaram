@@ -17,6 +17,8 @@ import {
 import Markdown, { MarkdownToJSX, RuleType } from 'markdown-to-jsx';
 import Copy from './MessageActions/Copy';
 import Rewrite from './MessageActions/Rewrite';
+import Summarize from './MessageActions/Summarize';
+import Fork from './MessageActions/Fork';
 import MessageSources from './MessageSources';
 import SearchImages from './SearchImages';
 import SearchVideos from './SearchVideos';
@@ -257,6 +259,8 @@ const MessageBox = ({
                         rewrite={rewrite}
                         messageId={section.message.messageId}
                       />
+                      <Summarize sectionIndex={sectionIndex} />
+                      <Fork sectionIndex={sectionIndex} />
                     </div>
                     <div className="flex flex-row items-center -mr-2">
                       <Copy initialMessage={parsedMessage} section={section} />

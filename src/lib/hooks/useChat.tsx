@@ -53,6 +53,7 @@ type ChatContext = {
   setSources: (sources: string[]) => void;
   setFiles: (files: File[]) => void;
   setFileIds: (fileIds: string[]) => void;
+  setMessages: (messages: Message[]) => void;
   sendMessage: (
     message: string,
     messageId?: string,
@@ -285,6 +286,7 @@ export const chatContext = createContext<ChatContext>({
   embeddingModelProvider: { key: '', providerId: '' },
   researchEnded: false,
   rewrite: () => {},
+  setMessages: () => {},
   sendMessage: async () => {},
   setFileIds: () => {},
   setFiles: () => {},
@@ -987,6 +989,7 @@ export const ChatProvider = ({ children }: { children: React.ReactNode }) => {
         setEmbeddingModelProvider,
         researchEnded,
         setResearchEnded,
+        setMessages,
         stop,
         processingStartTime,
       }}

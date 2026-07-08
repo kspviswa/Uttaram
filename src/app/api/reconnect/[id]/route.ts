@@ -46,6 +46,15 @@ export const POST = async (
               }) + '\n',
             ),
           );
+        } else if (data.type === 'phase') {
+          writer.write(
+            encoder.encode(
+              JSON.stringify({
+                type: 'phase',
+                phase: data.phase,
+              }) + '\n',
+            ),
+          );
         }
       } else if (event === 'end') {
         writer.write(

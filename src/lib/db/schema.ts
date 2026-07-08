@@ -16,6 +16,9 @@ export const messages = sqliteTable('messages', {
   status: text({ enum: ['answering', 'completed', 'error'] }).default(
     'answering',
   ),
+  phase: text({ enum: ['classifying', 'researching', 'writing'] }).default(
+    'classifying',
+  ),
 });
 
 interface DBFile {

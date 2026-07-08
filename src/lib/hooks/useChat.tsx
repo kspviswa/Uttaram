@@ -673,6 +673,16 @@ export const ChatProvider = ({ children }: { children: React.ReactNode }) => {
         }
       }
 
+      if (data.type === 'phase') {
+        setMessages((prev) =>
+          prev.map((msg) =>
+            msg.messageId === messageId
+              ? { ...msg, phase: data.phase }
+              : msg,
+          ),
+        );
+      }
+
       if (data.type === 'block') {
         setMessages((prev) =>
           prev.map((msg) => {
@@ -839,7 +849,7 @@ export const ChatProvider = ({ children }: { children: React.ReactNode }) => {
       window.history.replaceState(null, '', `/c/${chatId}`);
     }
 
-    messageId = messageId ?? crypto.randomBytes(7).toString('hex');
+      messageId = messageId ?? crypto.randomBytes(7).toString('hex');
     const backendId = crypto.randomBytes(20).toString('hex');
 
     const newMessage: Message = {
@@ -849,6 +859,7 @@ export const ChatProvider = ({ children }: { children: React.ReactNode }) => {
       query: message,
       responseBlocks: [],
       status: 'answering',
+      phase: 'classifying',
       createdAt: new Date(),
     };
 

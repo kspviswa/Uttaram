@@ -14,6 +14,31 @@ import { withRetryStream } from '@/lib/utils/withRetry';
 import { createRetryStatusHandler } from '@/lib/utils/emitRetryStatus';
 
 class SearchAgent {
+  private async syncBlocksToDb(
+    chatId: string,
+    messageId: string,
+    session: SessionManager,
+    phase: 'classifying' | 'researching' | 'writing',
+  ) {
+    try {
+      await db
+        .update(messages)
+        .set({
+          responseBlocks: session.getAllBlocks(),
+          phase,
+        })
+        .where(
+          and(
+            eq(messages.chatId, chatId),
+            eq(messages.messageId, messageId),
+          ),
+        )
+        .execute();
+    } catch (err) {
+      console.error('Failed to sync blocks to db:', err);
+    }
+  }
+
   async searchAsync(session: SessionManager, input: SearchAgentInput) {
     const exists = await db.query.messages.findFirst({
       where: and(
@@ -31,6 +56,7 @@ class SearchAgent {
         createdAt: new Date().toISOString(),
         status: 'answering',
         responseBlocks: [],
+        phase: 'classifying',
       });
     } else {
       await db
@@ -45,6 +71,7 @@ class SearchAgent {
           status: 'answering',
           backendId: session.id,
           responseBlocks: [],
+          phase: 'classifying',
         })
         .where(
           and(
@@ -54,6 +81,8 @@ class SearchAgent {
         )
         .execute();
     }
+
+    session.emit('data', { type: 'phase', phase: 'classifying' });
 
     const researchBlock: ResearchBlock = {
       id: crypto.randomUUID(),
@@ -89,6 +118,14 @@ class SearchAgent {
         standaloneFollowUp: input.followUp,
       };
     }
+
+    session.emit('data', { type: 'phase', phase: 'researching' });
+    await this.syncBlocksToDb(
+      input.chatId,
+      input.messageId,
+      session,
+      'researching',
+    );
 
     const widgetPromise = WidgetExecutor.executeAll({
       classification,
@@ -136,6 +173,14 @@ class SearchAgent {
     session.emit('data', {
       type: 'researchComplete',
     });
+
+    session.emit('data', { type: 'phase', phase: 'writing' });
+    await this.syncBlocksToDb(
+      input.chatId,
+      input.messageId,
+      session,
+      'writing',
+    );
 
     const answerRetryHandler = createRetryStatusHandler(session, researchBlock.id);
 
@@ -220,6 +265,7 @@ class SearchAgent {
     );
 
     let responseBlockId = '';
+    let chunkCount = 0;
 
     for await (const chunk of answerStream) {
       if (!responseBlockId) {
@@ -249,10 +295,20 @@ class SearchAgent {
           },
         ]);
       }
+
+      chunkCount++;
+      // Periodically sync blocks to DB during answer streaming
+      if (chunkCount % 20 === 0) {
+        await this.syncBlocksToDb(
+          input.chatId,
+          input.messageId,
+          session,
+          'writing',
+        ).catch(() => {});
+      }
     }
 
-    session.emit('end', {});
-
+    // Persist final blocks before emitting end
     await db
       .update(messages)
       .set({
@@ -266,6 +322,8 @@ class SearchAgent {
         ),
       )
       .execute();
+
+    session.emit('end', {});
   }
 }
 

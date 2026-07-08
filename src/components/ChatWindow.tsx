@@ -20,6 +20,7 @@ export interface Message extends BaseMessage {
   query: string;
   responseBlocks: Block[];
   status: 'answering' | 'completed' | 'error';
+  phase?: 'classifying' | 'researching' | 'writing';
 }
 
 export interface File {

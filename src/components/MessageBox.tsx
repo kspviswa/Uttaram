@@ -204,10 +204,21 @@ const MessageBox = ({
               <div className="flex items-center gap-2 p-3 rounded-lg bg-light-secondary dark:bg-dark-secondary border border-light-200 dark:border-dark-200">
                 <Disc3 className="w-4 h-4 text-black dark:text-white animate-spin" />
                 <span className="text-sm text-black/70 dark:text-white/70">
-                  Brainstorming...
+                  {section.message.phase === 'classifying'
+                    ? 'Classifying query...'
+                    : 'Brainstorming...'}
                 </span>
               </div>
             )}
+
+          {isLast && loading && researchEnded && !hasContent && (
+            <div className="flex items-center gap-2 p-3 rounded-lg bg-light-secondary dark:bg-dark-secondary border border-light-200 dark:border-dark-200">
+              <Disc3 className="w-4 h-4 text-black dark:text-white animate-spin" />
+              <span className="text-sm text-black/70 dark:text-white/70">
+                Generating answer...
+              </span>
+            </div>
+          )}
 
           {section.widgets.length > 0 && <Renderer widgets={section.widgets} />}
 

@@ -1,4 +1,4 @@
-# ऊttaram — Direct Your Curiosity
+# ऊttaram — Direct Your Curiosity and Personalize it Privately
 
 ऊttaram is a **privacy-focused AI answering engine** forked from [Vane](https://github.com/ItzCrazyKns/Vane). It runs on your own hardware, combines web knowledge with local and cloud LLMs (Ollama, OpenAI, Anthropic, Gemini, Groq, and more), and delivers cited answers — all while keeping your data private.
 

@@ -21,7 +21,11 @@ const Copy = ({
           (b) => b.type === 'source' && b.data.length > 0,
         ) as SourceBlock[];
 
-        const contentToCopy = `${initialMessage}${
+        const cleanMessage = initialMessage
+          .replace(/<citation[^>]*>(\d+)<\/citation>/g, '[$1]')
+          .replace(/<[^>]+>/g, '');
+
+        const contentToCopy = `${cleanMessage}${
           sources.length > 0
             ? `\n\nCitations:\n${sources
                 .map((source) => source.data)

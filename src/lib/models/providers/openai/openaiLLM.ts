@@ -8,6 +8,7 @@ import {
   GenerateTextOutput,
   StreamTextOutput,
   ToolCall,
+  TokenUsage,
 } from '../../types';
 import { parse } from 'partial-json';
 import z from 'zod';
@@ -101,6 +102,14 @@ class OpenAILLM extends BaseLLM<OpenAIConfig> {
     });
 
     if (response.choices && response.choices.length > 0) {
+      const usage: TokenUsage | undefined = response.usage
+        ? {
+            promptTokens: response.usage.prompt_tokens,
+            completionTokens: response.usage.completion_tokens,
+            totalTokens: response.usage.total_tokens,
+          }
+        : undefined;
+
       return {
         content: response.choices[0].message.content!,
         toolCalls:
@@ -118,6 +127,7 @@ class OpenAILLM extends BaseLLM<OpenAIConfig> {
         additionalInfo: {
           finishReason: response.choices[0].finish_reason,
         },
+        usage,
       };
     }
 
@@ -156,12 +166,22 @@ class OpenAILLM extends BaseLLM<OpenAIConfig> {
       presence_penalty:
         input.options?.presencePenalty ?? this.config.options?.presencePenalty,
       stream: true,
+      stream_options: { include_usage: true },
     });
 
     let recievedToolCalls: { name: string; id: string; arguments: string }[] =
       [];
 
     for await (const chunk of stream) {
+      const usage: TokenUsage | undefined =
+        chunk.usage
+          ? {
+              promptTokens: chunk.usage.prompt_tokens,
+              completionTokens: chunk.usage.completion_tokens,
+              totalTokens: chunk.usage.total_tokens,
+            }
+          : undefined;
+
       if (chunk.choices && chunk.choices.length > 0) {
         const toolCalls = chunk.choices[0].delta.tool_calls;
         yield {
@@ -189,6 +209,14 @@ class OpenAILLM extends BaseLLM<OpenAIConfig> {
           additionalInfo: {
             finishReason: chunk.choices[0].finish_reason,
           },
+          usage,
+        };
+      } else if (usage) {
+        yield {
+          contentChunk: '',
+          toolCallChunk: [],
+          done: true,
+          usage,
         };
       }
     }

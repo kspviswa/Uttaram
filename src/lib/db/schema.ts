@@ -2,6 +2,7 @@ import { sql } from 'drizzle-orm';
 import { text, integer, sqliteTable } from 'drizzle-orm/sqlite-core';
 import { Block } from '../types';
 import { SearchSources } from '../agents/search/types';
+import type { TokenUsage } from '../models/types';
 
 export const messages = sqliteTable('messages', {
   id: integer('id').primaryKey(),
@@ -19,6 +20,7 @@ export const messages = sqliteTable('messages', {
   phase: text({ enum: ['classifying', 'researching', 'writing'] }).default(
     'classifying',
   ),
+  usage: text('usage', { mode: 'json' }).$type<TokenUsage | null>().default(sql`NULL`),
 });
 
 interface DBFile {

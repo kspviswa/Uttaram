@@ -7,6 +7,7 @@ import NextError from 'next/error';
 import { useChat } from '@/lib/hooks/useChat';
 import SettingsButtonMobile from './Settings/SettingsButtonMobile';
 import { Block } from '@/lib/types';
+import type { TokenUsage } from '@/lib/models/types';
 import Loader from './ui/Loader';
 
 export interface BaseMessage {
@@ -21,6 +22,7 @@ export interface Message extends BaseMessage {
   responseBlocks: Block[];
   status: 'answering' | 'completed' | 'error';
   phase?: 'classifying' | 'researching' | 'writing';
+  usage?: TokenUsage | null;
 }
 
 export interface File {

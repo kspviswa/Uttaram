@@ -49,6 +49,12 @@ type ToolCall = {
   arguments: Record<string, any>;
 };
 
+type TokenUsage = {
+  promptTokens: number;
+  completionTokens: number;
+  totalTokens: number;
+};
+
 type GenerateTextInput = {
   messages: Message[];
   tools?: Tool[];
@@ -59,6 +65,7 @@ type GenerateTextOutput = {
   content: string;
   toolCalls: ToolCall[];
   additionalInfo?: Record<string, any>;
+  usage?: TokenUsage;
 };
 
 type StreamTextOutput = {
@@ -66,6 +73,7 @@ type StreamTextOutput = {
   toolCallChunk: ToolCall[];
   additionalInfo?: Record<string, any>;
   done?: boolean;
+  usage?: TokenUsage;
 };
 
 type GenerateObjectInput = {
@@ -98,6 +106,7 @@ export type {
   GenerateObjectInput,
   GenerateObjectOutput,
   StreamObjectOutput,
+  TokenUsage,
   Tool,
   ToolCall,
 };

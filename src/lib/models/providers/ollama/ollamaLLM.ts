@@ -6,6 +6,7 @@ import {
   GenerateTextInput,
   GenerateTextOutput,
   StreamTextOutput,
+  TokenUsage,
 } from '../../types';
 import { Ollama, Tool as OllamaTool, Message as OllamaMessage } from 'ollama';
 import { parse } from 'partial-json';
@@ -106,6 +107,15 @@ class OllamaLLM extends BaseLLM<OllamaConfig> {
       },
     });
 
+    const usage: TokenUsage | undefined =
+      res.prompt_eval_count != null
+        ? {
+            promptTokens: res.prompt_eval_count,
+            completionTokens: res.eval_count ?? 0,
+            totalTokens: res.prompt_eval_count + (res.eval_count ?? 0),
+          }
+        : undefined;
+
     return {
       content: res.message.content,
       toolCalls:
@@ -117,6 +127,7 @@ class OllamaLLM extends BaseLLM<OllamaConfig> {
       additionalInfo: {
         reasoning: res.message.thinking,
       },
+      usage,
     };
   }
 
@@ -162,6 +173,15 @@ class OllamaLLM extends BaseLLM<OllamaConfig> {
     });
 
     for await (const chunk of stream) {
+      const usage: TokenUsage | undefined =
+        chunk.done && chunk.prompt_eval_count != null
+          ? {
+              promptTokens: chunk.prompt_eval_count,
+              completionTokens: chunk.eval_count ?? 0,
+              totalTokens: chunk.prompt_eval_count + (chunk.eval_count ?? 0),
+            }
+          : undefined;
+
       yield {
         contentChunk: chunk.message.content,
         toolCallChunk:
@@ -179,6 +199,7 @@ class OllamaLLM extends BaseLLM<OllamaConfig> {
         additionalInfo: {
           reasoning: chunk.message.thinking,
         },
+        usage,
       };
     }
   }

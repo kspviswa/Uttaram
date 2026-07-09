@@ -17,6 +17,7 @@ const DEFAULT_SETTINGS: Record<string, any> = {
   chatModelKey: '',
   embeddingModelProviderId: '',
   embeddingModelKey: '',
+  contextLength: '8192',
 };
 
 function serialize(value: any): string {

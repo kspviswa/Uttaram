@@ -2,6 +2,7 @@ import { Clock, Edit, Share, FileText, FileDown, FolderKanban, Check } from 'luc
 import { useEffect, useState, Fragment, useRef } from 'react';
 import { formatTimeDifference } from '@/lib/utils';
 import DeleteChat from './DeleteChat';
+import ContextIndicator from './ContextIndicator';
 import {
   Popover,
   PopoverButton,
@@ -422,6 +423,7 @@ const Navbar = () => {
                 <TimerDisplay startTime={processingStartTime} />
               </div>
             )}
+            <ContextIndicator />
           </div>
 
           <div className="flex items-center gap-1 min-w-0">

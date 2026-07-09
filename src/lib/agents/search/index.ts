@@ -9,6 +9,7 @@ import { messages } from '@/lib/db/schema';
 import { and, eq, gt } from 'drizzle-orm';
 import { TextBlock, ResearchBlock } from '@/lib/types';
 import { getTokenCount } from '@/lib/utils/splitText';
+import type { TokenUsage } from '@/lib/models/types';
 import memoryStore from '@/lib/memory/store';
 import { withRetryStream } from '@/lib/utils/withRetry';
 import { createRetryStatusHandler } from '@/lib/utils/emitRetryStatus';
@@ -274,8 +275,12 @@ class SearchAgent {
 
     let responseBlockId = '';
     let chunkCount = 0;
+    let finalUsage: TokenUsage | undefined;
 
     for await (const chunk of answerStream) {
+      if (chunk.usage && chunk.done) {
+        finalUsage = chunk.usage;
+      }
       if (!responseBlockId) {
         const block: TextBlock = {
           id: crypto.randomUUID(),
@@ -322,6 +327,7 @@ class SearchAgent {
       .set({
         status: 'completed',
         responseBlocks: session.getAllBlocks(),
+        usage: finalUsage ?? null,
       })
       .where(
         and(

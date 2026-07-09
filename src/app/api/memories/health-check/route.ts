@@ -18,7 +18,7 @@ const actionSchema = z.object({
 });
 
 const healthCheckOutputSchema = z.object({
-  actions: z.array(actionSchema),
+  actions: z.array(actionSchema).default([]),
 });
 
 const HEALTH_CHECK_PROMPT = `You are a memory curator. Your job is to clean up and optimize a user's personal memory store.

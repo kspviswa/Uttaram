@@ -251,7 +251,7 @@ const loadMessages = async (
     document.title = messages[0].query;
   }
 
-  const files = data.chat.files.map((file: any) => {
+  const files = (data.chat?.files || []).map((file: any) => {
     return {
       fileName: file.name,
       fileExtension: file.name.split('.').pop(),
@@ -263,7 +263,7 @@ const loadMessages = async (
   setFileIds(files.map((file: File) => file.fileId));
 
   chatHistory.current = history;
-  setSources(data.chat.sources);
+  setSources(data.chat?.sources || []);
   setIsMessagesLoaded(true);
 };
 
@@ -578,7 +578,11 @@ export const ChatProvider = ({ children }: { children: React.ReactNode }) => {
         setNotFound,
         setFiles,
         setFileIds,
-      );
+      ).catch((err) => {
+        console.error('Failed to load messages:', err);
+        toast.error('Failed to load chat');
+        setIsMessagesLoaded(true);
+      });
     } else if (!chatId) {
       setNewChatCreated(true);
       setIsMessagesLoaded(true);

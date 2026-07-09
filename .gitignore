@@ -34,7 +34,7 @@ logs/
 .DS_Store
 Thumbs.db
 
-# Data
-data/
+# Data (symlink to ~/uttaram-data — contents backed up separately)
+data/*
 
 certificates.build.sh.swp

@@ -284,6 +284,7 @@ const Navbar = () => {
   }, [sections]);
 
   useEffect(() => {
+    if (!loading) return;
     const intervalId = setInterval(() => {
       if (sections.length > 0 && sections[0].message) {
         const newTimeAgo = formatTimeDifference(
@@ -295,8 +296,7 @@ const Navbar = () => {
     }, 1000);
 
     return () => clearInterval(intervalId);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [loading]);
 
   useEffect(() => {
     if (chatId) {

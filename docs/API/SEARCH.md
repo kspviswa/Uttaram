@@ -1,8 +1,8 @@
-# Vane Search API Documentation
+# Uttaram Search API Documentation
 
 ## Overview
 
-Vane's Search API makes it easy to use our AI-powered search engine. You can run different types of searches, pick the models you want to use, and get the most recent info. Follow the following headings to learn more about Vane's search API.
+Uttaram's Search API makes it easy to use our AI-powered search engine. You can run different types of searches, pick the models you want to use, and get the most recent info. Follow the following headings to learn more about Uttaram's search API.
 
 ## Endpoints
 
@@ -53,7 +53,7 @@ Use the `id` field as the `providerId` and the `key` field from the models array
 
 **Full URL**: `http://localhost:3000/api/search`
 
-**Note**: Replace `localhost:3000` with your Vane instance URL if running on a different host or port
+**Note**: Replace `localhost:3000` with your Uttaram instance URL if running on a different host or port
 
 ### Request
 
@@ -73,12 +73,12 @@ The API accepts a JSON object in the request body, where you define the enabled 
   },
   "optimizationMode": "speed",
   "sources": ["web"],
-  "query": "What is Vane",
+  "query": "What is Uttaram",
   "history": [
     ["human", "Hi, how are you?"],
     ["assistant", "I am doing well, how can I help you today?"]
   ],
-  "systemInstructions": "Focus on providing technical details about Vane's architecture.",
+  "systemInstructions": "Focus on providing technical details about Uttaram's architecture.",
   "stream": false
 }
 ```
@@ -115,8 +115,8 @@ The API accepts a JSON object in the request body, where you define the enabled 
 
   ```json
   [
-    ["human", "What is Vane?"],
-    ["assistant", "Vane is an AI-powered search engine..."]
+    ["human", "What is Uttaram?"],
+    ["assistant", "Uttaram is an AI-powered search engine..."]
   ]
   ```
 
@@ -130,19 +130,19 @@ The response from the API includes both the final message and the sources used t
 
 ```json
 {
-  "message": "Vane is an innovative, open-source AI-powered search engine designed to enhance the way users search for information online. Here are some key features and characteristics of Vane:\n\n- **AI-Powered Technology**: It utilizes advanced machine learning algorithms to not only retrieve information but also to understand the context and intent behind user queries, providing more relevant results [1][5].\n\n- **Open-Source**: Being open-source, Vane offers flexibility and transparency, allowing users to explore its functionalities without the constraints of proprietary software [3][10].",
+  "message": "Uttaram is an innovative, open-source AI-powered search engine designed to enhance the way users search for information online. Here are some key features and characteristics of Uttaram:\n\n- **AI-Powered Technology**: It utilizes advanced machine learning algorithms to not only retrieve information but also to understand the context and intent behind user queries, providing more relevant results [1][5].\n\n- **Open-Source**: Being open-source, Uttaram offers flexibility and transparency, allowing users to explore its functionalities without the constraints of proprietary software [3][10].",
   "sources": [
     {
-      "content": "Vane is an innovative, open-source AI-powered search engine designed to enhance the way users search for information online.",
+      "content": "Uttaram is an innovative, open-source AI-powered search engine designed to enhance the way users search for information online.",
       "metadata": {
-        "title": "What is Vane, and how does it function as an AI-powered search ...",
-        "url": "https://askai.glarity.app/search/What-is-Vane--and-how-does-it-function-as-an-AI-powered-search-engine"
+        "title": "What is Uttaram, and how does it function as an AI-powered search ...",
+        "url": "https://askai.glarity.app/search/What-is-Uttaram--and-how-does-it-function-as-an-AI-powered-search-engine"
       }
     },
     {
-      "content": "Vane is an open-source AI-powered search tool that dives deep into the internet to find precise answers.",
+      "content": "Uttaram is an open-source AI-powered search tool that dives deep into the internet to find precise answers.",
       "metadata": {
-        "title": "Sahar Mor's Post",
+        "title": "Sahar Mor's Post about Uttaram",
         "url": "https://www.linkedin.com/posts/sahar-mor_a-new-open-source-project-called-vane-activity-7204489745668694016-ncja"
       }
     }
@@ -160,7 +160,7 @@ Example of streamed response objects:
 ```
 {"type":"init","data":"Stream connected"}
 {"type":"sources","data":[{"content":"...","metadata":{"title":"...","url":"..."}},...]}
-{"type":"response","data":"Vane is an "}
+{"type":"response","data":"Uttaram is an "}
 {"type":"response","data":"innovative, open-source "}
 {"type":"response","data":"AI-powered search engine..."}
 {"type":"done"}

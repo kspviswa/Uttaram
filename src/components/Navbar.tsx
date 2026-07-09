@@ -80,7 +80,7 @@ const exportAsMarkdown = (sections: Section[], title: string) => {
 };
 
 const exportAsPDF = async (sections: Section[], title: string) => {
-  const chatEl = document.getElementById('vane-chat');
+  const chatEl = document.getElementById('uttaram-chat');
   if (!chatEl) return;
 
   const clone = chatEl.cloneNode(true) as HTMLElement;

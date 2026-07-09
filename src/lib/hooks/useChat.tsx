@@ -613,7 +613,7 @@ export const ChatProvider = ({ children }: { children: React.ReactNode }) => {
       const mins = Math.floor(elapsed / 60);
       const secs = elapsed % 60;
       const timeStr = mins > 0 ? `${mins}m ${secs.toString().padStart(2, '0')}` : `${secs}s`;
-      document.title = `⏳ ${timeStr} - Vane`;
+      document.title = `⏳ ${timeStr}  - Uttaram`;
     }, 1000);
     return () => {
       clearInterval(id);
@@ -621,7 +621,7 @@ export const ChatProvider = ({ children }: { children: React.ReactNode }) => {
         const q = sections[0].message.query.length > 30
           ? sections[0].message.query.substring(0, 30).trim() + '...'
           : sections[0].message.query;
-        document.title = `${q} - Vane`;
+        document.title = `${q}  - Uttaram`;
       }
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -803,7 +803,7 @@ export const ChatProvider = ({ children }: { children: React.ReactNode }) => {
 
         if (typeof document !== 'undefined') {
           const q = message.query.length > 30 ? message.query.substring(0, 30).trim() + '...' : message.query;
-          document.title = `✓ ${q} - Vane`;
+          document.title = `✓ ${q}  - Uttaram`;
         }
 
         const lastMsg = messagesRef.current[messagesRef.current.length - 1];

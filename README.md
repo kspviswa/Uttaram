@@ -49,7 +49,7 @@ This fork introduces several features not found in the upstream Vane project:
 ```bash
 docker run -d \
   -p 7777:3000 \
-  -v $(pwd)/data:/home/vane/data \
+  -v $(pwd)/data:/home/uttaram/data \
   --name uttaram \
   kspviswa/uttaram:latest
 ```
@@ -65,15 +65,15 @@ services:
     ports:
       - '7777:3000'
     volumes:
-      - ./data:/home/vane/data
+      - ./data:/home/uttaram/data
     restart: unless-stopped
 ```
 
 ### Building from Source
 
 ```bash
-git clone https://github.com/kspviswa/Vane.git
-cd Vane
+git clone https://github.com/kspviswa/Uttaram.git
+cd Uttaram
 npm install
 npm run build
 npm start

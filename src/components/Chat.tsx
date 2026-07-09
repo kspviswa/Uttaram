@@ -49,7 +49,7 @@ const Chat = () => {
     };
 
     if (messages.length === 1) {
-      document.title = `${messages[0].query.substring(0, 30)} - Vane`;
+      document.title = `${messages[0].query.substring(0, 30)}  - Uttaram`;
     }
 
     if (sections.length > lastScrolledRef.current) {
@@ -59,7 +59,7 @@ const Chat = () => {
   }, [messages]);
 
   return (
-    <div id="vane-chat" className="flex flex-col space-y-6 pt-8 pb-44 lg:pb-28 sm:mx-4 md:mx-8">
+    <div id="uttaram-chat" className="flex flex-col space-y-6 pt-8 pb-44 lg:pb-28 sm:mx-4 md:mx-8">
       {sections.map((section, i) => {
         const isLast = i === sections.length - 1;
 

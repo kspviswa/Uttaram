@@ -1,7 +1,7 @@
 #!/bin/sh
 set -e
 
-echo "Starting Vane..."
+echo "Starting Uttaram..."
 
-cd /home/vane
+cd /home/uttaram
 exec node server.js

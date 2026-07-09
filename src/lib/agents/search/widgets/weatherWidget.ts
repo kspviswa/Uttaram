@@ -106,7 +106,7 @@ const weatherWidget: Widget = {
 
         const data = await fetchWithRetry(openStreetMapUrl, {
           headers: {
-            'User-Agent': 'Vane',
+            'User-Agent': 'Uttaram',
             'Content-Type': 'application/json',
           },
         });
@@ -123,7 +123,7 @@ const weatherWidget: Widget = {
 
         const weatherData = await fetchWithRetry(weatherUrl, {
           headers: {
-            'User-Agent': 'Vane',
+            'User-Agent': 'Uttaram',
             'Content-Type': 'application/json',
           },
         });
@@ -155,13 +155,13 @@ const weatherWidget: Widget = {
         const [weatherData, locationData] = await Promise.all([
           fetchWithRetry(weatherUrl, {
             headers: {
-              'User-Agent': 'Vane',
+              'User-Agent': 'Uttaram',
               'Content-Type': 'application/json',
             },
           }),
           fetchWithRetry(reverseGeoUrl, {
             headers: {
-              'User-Agent': 'Vane',
+              'User-Agent': 'Uttaram',
               'Content-Type': 'application/json',
             },
           }),

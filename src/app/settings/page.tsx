@@ -173,7 +173,7 @@ export default function SettingsPage() {
               Version: {process.env.NEXT_PUBLIC_VERSION}
             </p>
             <a
-              href="https://github.com/itzcrazykns/vane"
+              href="https://github.com/kspviswa/uttaram"
               target="_blank"
               rel="noopener noreferrer"
               className="text-xs text-black/70 dark:text-white/70 flex flex-row space-x-1 items-center transition duration-200 hover:text-black/90 hover:dark:text-white/90"

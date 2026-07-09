@@ -6,10 +6,8 @@ import {
   BrainCircuit,
   Home,
   Search,
-  SquarePen,
   Settings,
   Plus,
-  ArrowLeft,
 } from 'lucide-react';
 import Link from 'next/link';
 import { useSelectedLayoutSegments } from 'next/navigation';
@@ -21,7 +19,7 @@ import {
   DialogPanel,
   DialogTitle,
 } from '@headlessui/react';
-import SettingsButton from './Settings/SettingsButton';
+
 
 const VerticalIconContainer = ({ children }: { children: ReactNode }) => {
   return <div className="flex flex-col items-center w-full">{children}</div>;
@@ -55,6 +53,12 @@ const Sidebar = ({ children }: { children: React.ReactNode }) => {
       href: '/memories',
       active: segments.includes('memories'),
       label: 'Memories',
+    },
+    {
+      icon: Settings,
+      href: '/settings',
+      active: segments.includes('settings'),
+      label: 'Settings',
     },
   ];
 
@@ -107,8 +111,6 @@ const Sidebar = ({ children }: { children: React.ReactNode }) => {
               </Link>
             ))}
           </VerticalIconContainer>
-
-          <SettingsButton />
         </div>
       </div>
 

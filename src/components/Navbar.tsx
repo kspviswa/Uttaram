@@ -13,7 +13,6 @@ import jsPDF from 'jspdf';
 import html2canvas from 'html2canvas';
 import { useChat, Section } from '@/lib/hooks/useChat';
 import { SourceBlock } from '@/lib/types';
-import { convertLatex } from '@/lib/latex';
 
 interface Project {
   id: string;
@@ -80,106 +79,35 @@ const exportAsMarkdown = (sections: Section[], title: string) => {
   downloadFile(`${title || 'chat'}.md`, md, 'text/markdown');
 };
 
-const buildHTML = (sections: Section[], title: string): string => {
-  const date = new Date(
-    sections[0]?.message?.createdAt || Date.now(),
-  ).toLocaleString();
-
-  const renderText = (text: string): string => {
-    const escaped = text
-      .replace(/&/g, '&amp;')
-      .replace(/</g, '&lt;')
-      .replace(/>/g, '&gt;');
-    return convertLatex(escaped).replace(/\n/g, '<br>');
-  };
-
-  const sectionHTML = sections
-    .map((section) => {
-      const isUser = !section.message.query.startsWith('[system]');
-      const answerText = section.parsedTextBlocks
-        .filter((b) => !b.includes('<think>'))
-        .join('\n\n');
-
-      const sources = section.message.responseBlocks
-        .filter((b): b is SourceBlock => b.type === 'source')
-        .flatMap((b) => b.data);
-
-      let html = `
-        <div class="message user">
-          <div class="label">User</div>
-          <div class="time">${new Date(section.message.createdAt).toLocaleString()}</div>
-          <div class="content">${renderText(section.message.query)}</div>
-        </div>`;
-
-      if (answerText) {
-        html += `
-        <div class="message assistant">
-          <div class="label">Assistant</div>
-          <div class="time">${new Date(section.message.createdAt).toLocaleString()}</div>
-          <div class="content">${renderText(answerText)}</div>
-        </div>`;
-      }
-
-      if (sources.length > 0) {
-        html += `<div class="sources"><div class="label">Citations</div>`;
-        sources.forEach((src: any, i: number) => {
-          const url = src.metadata?.url || '';
-          html += `<div class="citation">[${i + 1}] ${url.startsWith('file_id://') ? (src.metadata?.fileName || 'Uploaded File') : url}</div>`;
-        });
-        html += `</div>`;
-      }
-
-      return html;
-    })
-    .join('<hr>');
-
-  return `<!DOCTYPE html>
-<html>
-<head><meta charset="utf-8"><title>Chat Export: ${title}</title>
-<style>
-  * { margin: 0; padding: 0; box-sizing: border-box; }
-  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; font-size: 12px; color: #1a1a1a; padding: 40px; line-height: 1.6; }
-  h1 { font-size: 24px; margin-bottom: 8px; }
-  .meta { color: #666; font-size: 11px; margin-bottom: 24px; }
-  hr { border: none; border-top: 1px solid #e0e0e0; margin: 24px 0; }
-  .message { margin-bottom: 20px; }
-  .label { font-weight: 600; font-size: 13px; margin-bottom: 2px; }
-  .time { color: #888; font-size: 10px; margin-bottom: 8px; }
-  .content { white-space: pre-wrap; }
-  .user .content { background: #f5f5f5; padding: 12px; border-radius: 8px; }
-  .assistant .content { padding: 12px; }
-  pre { background: #1e1e1e; color: #d4d4d4; padding: 12px; border-radius: 6px; overflow-x: auto; font-size: 11px; line-height: 1.5; }
-  code { font-family: 'SF Mono', 'Fira Code', monospace; }
-  :not(pre) > code { background: #f0f0f0; padding: 2px 4px; border-radius: 3px; font-size: 11px; }
-  .sources { margin-top: 12px; padding: 12px; background: #fafafa; border-radius: 8px; }
-  .citation { font-size: 11px; color: #444; margin-bottom: 4px; word-break: break-all; }
-  table { border-collapse: collapse; width: 100%; margin: 12px 0; }
-  th, td { border: 1px solid #ddd; padding: 6px 10px; text-align: left; font-size: 11px; }
-  th { background: #f5f5f5; font-weight: 600; }
-  img { max-width: 100%; }
-  blockquote { border-left: 3px solid #ddd; margin: 8px 0; padding: 4px 12px; color: #666; }
-</style></head>
-<body>
-  <h1>Chat Export: ${title}</h1>
-  <div class="meta">Exported on: ${date}</div>
-  <hr>
-  ${sectionHTML}
-</body></html>`;
-};
-
 const exportAsPDF = async (sections: Section[], title: string) => {
-  const html = buildHTML(sections, title);
-  const container = document.createElement('div');
-  container.innerHTML = html;
-  container.style.position = 'fixed';
-  container.style.left = '-9999px';
-  container.style.top = '0';
-  container.style.width = '800px';
-  container.style.background = '#ffffff';
-  document.body.appendChild(container);
+  const chatEl = document.getElementById('vane-chat');
+  if (!chatEl) return;
+
+  const clone = chatEl.cloneNode(true) as HTMLElement;
+  clone.style.position = 'fixed';
+  clone.style.left = '-9999px';
+  clone.style.top = '0';
+  clone.style.width = '800px';
+  clone.style.background = '#ffffff';
+  clone.style.padding = '40px';
+  clone.style.paddingBottom = '40px';
+  clone.style.margin = '0';
+  clone.style.maxWidth = 'none';
+
+  // Remove interactive and non-content elements
+  const removals = clone.querySelectorAll(
+    'button, input, textarea, select, iframe, video, audio, [role="button"]',
+  );
+  removals.forEach((el) => el.remove());
+
+  // Remove the gradient overlay and message input area at the bottom
+  const fixedElements = clone.querySelectorAll('.fixed, .sticky');
+  fixedElements.forEach((el) => el.remove());
+
+  document.body.appendChild(clone);
 
   try {
-    const canvas = await html2canvas(container, {
+    const canvas = await html2canvas(clone, {
       scale: 2,
       useCORS: true,
       logging: false,
@@ -205,7 +133,7 @@ const exportAsPDF = async (sections: Section[], title: string) => {
 
     doc.save(`${title || 'chat'}.pdf`);
   } finally {
-    document.body.removeChild(container);
+    document.body.removeChild(clone);
   }
 };
 

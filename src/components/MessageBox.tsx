@@ -15,6 +15,8 @@ import {
   Check,
 } from 'lucide-react';
 import Markdown, { MarkdownToJSX, RuleType } from 'markdown-to-jsx';
+import katex from 'katex';
+import 'katex/dist/katex.min.css';
 import Copy from './MessageActions/Copy';
 import Rewrite from './MessageActions/Rewrite';
 import Summarize from './MessageActions/Summarize';
@@ -30,6 +32,38 @@ import AssistantSteps from './AssistantSteps';
 import { ResearchBlock } from '@/lib/types';
 import Renderer from './Widgets/Renderer';
 import CodeBlock from './MessageRenderer/CodeBlock';
+
+const renderMath = (text: string): string => {
+  const blocks: string[] = [];
+  const extracted = text.replace(
+    /(\$\$[\s\S]*?\$\$|\\\[[\s\S]*?\\\]|\\\([\s\S]*?\\\))/g,
+    (match) => {
+      blocks.push(match);
+      return `%%MATH_${blocks.length - 1}%%`;
+    },
+  );
+  return extracted.replace(/%%MATH_(\d+)%%/g, (_, idx) => {
+    const raw = blocks[parseInt(idx)];
+    if (!raw) return '';
+    const isDisplay = raw.startsWith('$$') || raw.startsWith('\\[');
+    const content = raw
+      .replace(/^\$\$/, '')
+      .replace(/\$\$$/, '')
+      .replace(/^\\\[/, '')
+      .replace(/\\\]$/, '')
+      .replace(/^\\\(/, '')
+      .replace(/\\\)$/, '')
+      .trim();
+    try {
+      return katex.renderToString(content, {
+        displayMode: isDisplay,
+        throwOnError: false,
+      });
+    } catch {
+      return raw;
+    }
+  });
+};
 
 const ThinkTagProcessor = ({
   children,
@@ -63,7 +97,7 @@ const MessageBox = ({
     chatHistory,
   } = useChat();
 
-  const parsedMessage = section.parsedTextBlocks.join('\n\n');
+  const parsedMessage = renderMath(section.parsedTextBlocks.join('\n\n'));
   const speechMessage = section.speechMessage || '';
   const thinkingEnded = section.thinkingEnded;
 

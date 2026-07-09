@@ -59,7 +59,7 @@ const Chat = () => {
   }, [messages]);
 
   return (
-    <div className="flex flex-col space-y-6 pt-8 pb-44 lg:pb-28 sm:mx-4 md:mx-8">
+    <div id="vane-chat" className="flex flex-col space-y-6 pt-8 pb-44 lg:pb-28 sm:mx-4 md:mx-8">
       {sections.map((section, i) => {
         const isLast = i === sections.length - 1;
 

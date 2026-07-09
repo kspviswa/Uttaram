@@ -129,5 +129,25 @@ export function convertLatex(text: string): string {
       .join('|'),
     'g',
   );
-  return text.replace(pattern, (match) => LATEX_SYMBOLS[match] || match);
+
+  const mathBlocks: string[] = [];
+  const PLACEHOLDER = '%%KATEX_BLOCK_';
+
+  const withoutMath = text.replace(
+    /(\$\$[\s\S]*?\$\$|\\\[[\s\S]*?\\\]|\\\([\s\S]*?\\\))/g,
+    (match) => {
+      mathBlocks.push(match);
+      return `${PLACEHOLDER}${mathBlocks.length - 1}%%`;
+    },
+  );
+
+  const converted = withoutMath.replace(
+    pattern,
+    (match) => LATEX_SYMBOLS[match] || match,
+  );
+
+  return converted.replace(
+    /%%KATEX_BLOCK_(\d+)%%/g,
+    (_, idx) => mathBlocks[parseInt(idx)] || '',
+  );
 }

@@ -541,21 +541,33 @@ export const ChatProvider = ({ children }: { children: React.ReactNode }) => {
   useEffect(() => {
     if (params.chatId && params.chatId !== chatId) {
       homeReset.current = false;
+      abortControllerRef.current?.abort();
+      abortControllerRef.current = null;
       setChatId(params.chatId);
       setMessages([]);
       chatHistory.current = [];
       setFiles([]);
       setFileIds([]);
+      setLoading(false);
+      setProcessingStartTime(null);
+      setResearchEnded(false);
+      setMessageAppeared(false);
       setIsMessagesLoaded(false);
       setNotFound(false);
       setNewChatCreated(false);
     } else if (!params.chatId && chatId && !homeReset.current) {
       homeReset.current = true;
+      abortControllerRef.current?.abort();
+      abortControllerRef.current = null;
       setChatId(crypto.randomBytes(20).toString('hex'));
       setMessages([]);
       chatHistory.current = [];
       setFiles([]);
       setFileIds([]);
+      setLoading(false);
+      setProcessingStartTime(null);
+      setResearchEnded(false);
+      setMessageAppeared(false);
       setIsMessagesLoaded(true);
       setNewChatCreated(true);
       setNotFound(false);

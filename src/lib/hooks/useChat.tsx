@@ -308,7 +308,6 @@ export const ChatProvider = ({ children }: { children: React.ReactNode }) => {
   const [chatId, setChatId] = useState<string | undefined>(params.chatId);
   const [newChatCreated, setNewChatCreated] = useState(false);
 
-  const [loading, setLoading] = useState(false);
   const [messageAppeared, setMessageAppeared] = useState(false);
 
   const [researchEnded, setResearchEnded] = useState(false);
@@ -316,6 +315,10 @@ export const ChatProvider = ({ children }: { children: React.ReactNode }) => {
   const chatHistory = useRef<[string, string][]>([]);
   const homeReset = useRef(false);
   const [messages, setMessages] = useState<Message[]>([]);
+  const loading = useMemo(
+    () => messages.some((msg) => msg.status === 'answering'),
+    [messages],
+  );
 
   const [files, setFiles] = useState<File[]>([]);
   const [fileIds, setFileIds] = useState<string[]>([]);
@@ -453,7 +456,6 @@ export const ChatProvider = ({ children }: { children: React.ReactNode }) => {
       abortControllerRef.current = null;
     }
     if (chatId) clearTimer(chatId);
-    setLoading(false);
     setResearchEnded(true);
     setMessages((prev) =>
       prev.map((msg) =>
@@ -474,7 +476,6 @@ export const ChatProvider = ({ children }: { children: React.ReactNode }) => {
       const lastMsg = messages[messages.length - 1];
 
       if (lastMsg.status === 'answering') {
-        setLoading(true);
         setResearchEnded(false);
         setMessageAppeared(false);
 
@@ -548,7 +549,6 @@ export const ChatProvider = ({ children }: { children: React.ReactNode }) => {
       chatHistory.current = [];
       setFiles([]);
       setFileIds([]);
-      setLoading(false);
       setProcessingStartTime(null);
       setResearchEnded(false);
       setMessageAppeared(false);
@@ -564,7 +564,6 @@ export const ChatProvider = ({ children }: { children: React.ReactNode }) => {
       chatHistory.current = [];
       setFiles([]);
       setFileIds([]);
-      setLoading(false);
       setProcessingStartTime(null);
       setResearchEnded(false);
       setMessageAppeared(false);
@@ -669,7 +668,6 @@ export const ChatProvider = ({ children }: { children: React.ReactNode }) => {
     return async (data: any) => {
       if (data.type === 'error') {
         toast.error(data.data);
-        setLoading(false);
         setMessages((prev) =>
           prev.map((msg) =>
             msg.messageId === messageId
@@ -786,8 +784,6 @@ export const ChatProvider = ({ children }: { children: React.ReactNode }) => {
           ),
         );
 
-        setLoading(false);
-
         const elapsed = processingStartTime
           ? Math.floor((Date.now() - processingStartTime) / 1000)
           : 0;
@@ -873,7 +869,6 @@ export const ChatProvider = ({ children }: { children: React.ReactNode }) => {
     rewrite = false,
   ) => {
     if (loading || !message) return;
-    setLoading(true);
     setResearchEnded(false);
     setMessageAppeared(false);
     const now = Date.now();
@@ -994,7 +989,6 @@ export const ChatProvider = ({ children }: { children: React.ReactNode }) => {
       }
     } finally {
       abortControllerRef.current = null;
-      setLoading(false);
     }
   };
 

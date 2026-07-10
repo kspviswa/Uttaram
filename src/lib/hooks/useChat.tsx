@@ -308,10 +308,6 @@ export const ChatProvider = ({ children }: { children: React.ReactNode }) => {
   const [chatId, setChatId] = useState<string | undefined>(params.chatId);
   const [newChatCreated, setNewChatCreated] = useState(false);
 
-  const [messageAppeared, setMessageAppeared] = useState(false);
-
-  const [researchEnded, setResearchEnded] = useState(false);
-
   const chatHistory = useRef<[string, string][]>([]);
   const homeReset = useRef(false);
   const [messages, setMessages] = useState<Message[]>([]);
@@ -319,6 +315,19 @@ export const ChatProvider = ({ children }: { children: React.ReactNode }) => {
     () => messages.some((msg) => msg.status === 'answering'),
     [messages],
   );
+  const researchEnded = useMemo(() => {
+    const current = messages.find((msg) => msg.status === 'answering');
+    if (!current) return true;
+    return current.phase === 'writing';
+  }, [messages]);
+  const messageAppeared = useMemo(
+    () => messages.some((msg) => msg.responseBlocks.length > 0),
+    [messages],
+  );
+  const processingStartTime = useMemo(() => {
+    const current = messages.find((msg) => msg.status === 'answering');
+    return current ? new Date(current.createdAt).getTime() : null;
+  }, [messages]);
 
   const [files, setFiles] = useState<File[]>([]);
   const [fileIds, setFileIds] = useState<string[]>([]);
@@ -329,7 +338,6 @@ export const ChatProvider = ({ children }: { children: React.ReactNode }) => {
   const [isMessagesLoaded, setIsMessagesLoaded] = useState(false);
 
   const [notFound, setNotFound] = useState(false);
-  const [processingStartTime, setProcessingStartTime] = useState<number | null>(null);
 
   const [chatModelProvider, setChatModelProvider] = useState<ChatModelProvider>(
     {
@@ -443,20 +451,12 @@ export const ChatProvider = ({ children }: { children: React.ReactNode }) => {
   const handledMessageEndRef = useRef<Set<string>>(new Set());
   const abortControllerRef = useRef<AbortController | null>(null);
 
-  const TIMER_KEY_PREFIX = 'chatTimer-';
-
-  const clearTimer = useCallback((id: string) => {
-    localStorage.removeItem(`${TIMER_KEY_PREFIX}${id}`);
-    setProcessingStartTime(null);
-  }, []);
-
   const stop = useCallback(() => {
     if (abortControllerRef.current) {
       abortControllerRef.current.abort();
       abortControllerRef.current = null;
     }
-    if (chatId) clearTimer(chatId);
-    setResearchEnded(true);
+    if (chatId) localStorage.removeItem(`chatTimer-${chatId}`);
     setMessages((prev) =>
       prev.map((msg) =>
         msg.status === 'answering'
@@ -464,7 +464,7 @@ export const ChatProvider = ({ children }: { children: React.ReactNode }) => {
           : msg,
       ),
     );
-  }, [chatId, clearTimer]);
+  }, [chatId]);
 
   const checkReconnect = async () => {
     if (isReconnectingRef.current) return;
@@ -476,18 +476,6 @@ export const ChatProvider = ({ children }: { children: React.ReactNode }) => {
       const lastMsg = messages[messages.length - 1];
 
       if (lastMsg.status === 'answering') {
-        setResearchEnded(false);
-        setMessageAppeared(false);
-
-        const storedTimer = localStorage.getItem(`${TIMER_KEY_PREFIX}${chatId}`);
-        if (storedTimer) {
-          setProcessingStartTime(parseInt(storedTimer, 10));
-        } else {
-          const now = Date.now();
-          localStorage.setItem(`${TIMER_KEY_PREFIX}${chatId}`, now.toString());
-          setProcessingStartTime(now);
-        }
-
         isReconnectingRef.current = true;
 
         const res = await fetch(`/api/reconnect/${lastMsg.backendId}`, {
@@ -549,9 +537,6 @@ export const ChatProvider = ({ children }: { children: React.ReactNode }) => {
       chatHistory.current = [];
       setFiles([]);
       setFileIds([]);
-      setProcessingStartTime(null);
-      setResearchEnded(false);
-      setMessageAppeared(false);
       setIsMessagesLoaded(false);
       setNotFound(false);
       setNewChatCreated(false);
@@ -564,9 +549,6 @@ export const ChatProvider = ({ children }: { children: React.ReactNode }) => {
       chatHistory.current = [];
       setFiles([]);
       setFileIds([]);
-      setProcessingStartTime(null);
-      setResearchEnded(false);
-      setMessageAppeared(false);
       setIsMessagesLoaded(true);
       setNewChatCreated(true);
       setNotFound(false);
@@ -678,17 +660,6 @@ export const ChatProvider = ({ children }: { children: React.ReactNode }) => {
         return;
       }
 
-      if (data.type === 'researchComplete') {
-        setResearchEnded(true);
-        if (
-          message.responseBlocks.find(
-            (b) => b.type === 'source' && b.data.length > 0,
-          )
-        ) {
-          setMessageAppeared(true);
-        }
-      }
-
       if (data.type === 'phase') {
         setMessages((prev) =>
           prev.map((msg) =>
@@ -725,13 +696,6 @@ export const ChatProvider = ({ children }: { children: React.ReactNode }) => {
             return msg;
           }),
         );
-
-        if (
-          (data.block.type === 'source' && data.block.data.length > 0) ||
-          data.block.type === 'text'
-        ) {
-          setMessageAppeared(true);
-        }
       }
 
       if (data.type === 'updateBlock') {
@@ -787,7 +751,7 @@ export const ChatProvider = ({ children }: { children: React.ReactNode }) => {
         const elapsed = processingStartTime
           ? Math.floor((Date.now() - processingStartTime) / 1000)
           : 0;
-        if (chatId) clearTimer(chatId);
+        if (chatId) localStorage.removeItem(`chatTimer-${chatId}`);
         const mins = Math.floor(elapsed / 60);
         const secs = elapsed % 60;
         const timeStr = mins > 0 ? `${mins}m ${secs}s` : `${secs}s`;
@@ -869,11 +833,6 @@ export const ChatProvider = ({ children }: { children: React.ReactNode }) => {
     rewrite = false,
   ) => {
     if (loading || !message) return;
-    setResearchEnded(false);
-    setMessageAppeared(false);
-    const now = Date.now();
-    localStorage.setItem(`${TIMER_KEY_PREFIX}${chatId}`, now.toString());
-    setProcessingStartTime(now);
 
     if (messages.length <= 1) {
       window.history.replaceState(null, '', `/c/${chatId}`);

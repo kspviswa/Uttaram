@@ -16,7 +16,7 @@ const Copy = ({
   return (
     <button
       title="Copy answer with citations"
-      onClick={() => {
+      onClick={async () => {
         const sources = section.message.responseBlocks.filter(
           (b) => b.type === 'source' && b.data.length > 0,
         ) as SourceBlock[];
@@ -38,7 +38,18 @@ const Copy = ({
             : ''
         }`;
 
-        navigator.clipboard.writeText(contentToCopy);
+        try {
+          await navigator.clipboard.writeText(contentToCopy);
+        } catch {
+          const ta = document.createElement('textarea');
+          ta.value = contentToCopy;
+          ta.style.position = 'fixed';
+          ta.style.opacity = '0';
+          document.body.appendChild(ta);
+          ta.select();
+          document.execCommand('copy');
+          document.body.removeChild(ta);
+        }
 
         setCopied(true);
         setTimeout(() => setCopied(false), 1000);

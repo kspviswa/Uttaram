@@ -177,8 +177,19 @@ const MessageBox = ({
           </h2>
           <div className="flex items-center gap-1 pt-1 flex-shrink-0">
             <button
-              onClick={() => {
-                navigator.clipboard.writeText(query);
+              onClick={async () => {
+                try {
+                  await navigator.clipboard.writeText(query);
+                } catch {
+                  const ta = document.createElement('textarea');
+                  ta.value = query;
+                  ta.style.position = 'fixed';
+                  ta.style.opacity = '0';
+                  document.body.appendChild(ta);
+                  ta.select();
+                  document.execCommand('copy');
+                  document.body.removeChild(ta);
+                }
                 setQueryCopied(true);
                 setTimeout(() => setQueryCopied(false), 1500);
               }}

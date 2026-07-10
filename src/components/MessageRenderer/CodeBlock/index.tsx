@@ -36,8 +36,19 @@ const CodeBlock = ({
       <button
         className="absolute top-2 right-2 p-1.5 rounded-md bg-black/20 dark:bg-white/10 opacity-0 group-hover:opacity-100 transition-opacity duration-200"
         title="Copy code"
-        onClick={() => {
-          navigator.clipboard.writeText(children as string);
+        onClick={async () => {
+          try {
+            await navigator.clipboard.writeText(children as string);
+          } catch {
+            const ta = document.createElement('textarea');
+            ta.value = children as string;
+            ta.style.position = 'fixed';
+            ta.style.opacity = '0';
+            document.body.appendChild(ta);
+            ta.select();
+            document.execCommand('copy');
+            document.body.removeChild(ta);
+          }
           setCopied(true);
           setTimeout(() => setCopied(false), 2000);
         }}

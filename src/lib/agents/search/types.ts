@@ -29,6 +29,7 @@ export type SearchAgentConfig = {
   metadata?: ClientMetadata;
   llmTimeout?: number;
   llmMaxRetries?: number;
+  classificationLlm?: BaseLLM<any> | null;
 };
 
 export type SearchAgentInput = {
@@ -61,6 +62,7 @@ export type WidgetOutput = {
 
 export type ClassifierInput = {
   llm: BaseLLM<any>;
+  classificationLlm?: BaseLLM<any> | null;
   embedding?: BaseEmbedding<any>;
   enabledSources: SearchSources[];
   query: string;

@@ -19,6 +19,8 @@ const DEFAULT_SETTINGS: Record<string, any> = {
   embeddingModelKey: '',
   visionModelProviderId: '',
   visionModelKey: '',
+  classificationModelProviderId: '',
+  classificationModelKey: '',
   contextLength: '8192',
 };
 

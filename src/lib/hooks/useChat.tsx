@@ -102,6 +102,9 @@ const checkConfig = async (
     let embeddingModelKey = settingsData.embeddingModelKey || localStorage.getItem('embeddingModelKey');
     let embeddingModelProviderId = settingsData.embeddingModelProviderId || localStorage.getItem('embeddingModelProviderId');
 
+    if (settingsData.classificationModelProviderId) localStorage.setItem('classificationModelProviderId', settingsData.classificationModelProviderId);
+    if (settingsData.classificationModelKey) localStorage.setItem('classificationModelKey', settingsData.classificationModelKey);
+
     const res = await fetch(`/api/providers`, {
       headers: {
         'Content-Type': 'application/json',
@@ -893,6 +896,11 @@ export const ChatProvider = ({ children }: { children: React.ReactNode }) => {
           const vk = localStorage.getItem('visionModelKey');
           return vp && vk ? { providerId: vp, key: vk } : null;
         })(),
+        classificationModel: (() => {
+          const cp = localStorage.getItem('classificationModelProviderId');
+          const ck = localStorage.getItem('classificationModelKey');
+          return cp && ck ? { providerId: cp, key: ck } : null;
+        })(),
         systemInstructions: localStorage.getItem('systemInstructions'),
         userProfile: {
           name: localStorage.getItem('userName') || '',
@@ -979,7 +987,7 @@ export const ChatProvider = ({ children }: { children: React.ReactNode }) => {
         embeddingModelProvider,
         setEmbeddingModelProvider,
         researchEnded,
-        setResearchEnded,
+        setResearchEnded: () => {},
         setMessages,
         stop,
         processingStartTime,

@@ -100,6 +100,7 @@ class SearchAgent {
         enabledSources: input.config.sources,
         query: input.followUp,
         llm: input.config.llm,
+        classificationLlm: input.config.classificationLlm,
         embedding: input.config.embedding,
         enableMemories: input.config.enableMemories,
         userProfile: input.config.userProfile,
@@ -109,7 +110,7 @@ class SearchAgent {
       console.error('Classifier failed, using defaults:', err);
       classification = {
         classification: {
-          skipSearch: false,
+          skipSearch: true,
           personalSearch: false,
           academicSearch: false,
           discussionSearch: false,

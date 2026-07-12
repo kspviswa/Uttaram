@@ -9,11 +9,12 @@ const ModelSelect = ({
   type,
 }: {
   providers: ConfigModelProvider[];
-  type: 'chat' | 'embedding' | 'vision';
+  type: 'chat' | 'embedding' | 'vision' | 'classification';
 }) => {
   const [selectedModel, setSelectedModel] = useState<string>(() => {
     if (type === 'chat') return `${localStorage.getItem('chatModelProviderId')}/${localStorage.getItem('chatModelKey')}`;
     if (type === 'vision') return `${localStorage.getItem('visionModelProviderId')}/${localStorage.getItem('visionModelKey')}`;
+    if (type === 'classification') return `${localStorage.getItem('classificationModelProviderId') || ''}/${localStorage.getItem('classificationModelKey') || ''}`;
     return `${localStorage.getItem('embeddingModelProviderId')}/${localStorage.getItem('embeddingModelKey')}`;
   });
   const [loading, setLoading] = useState(false);
@@ -34,6 +35,9 @@ const ModelSelect = ({
       } else if (type === 'vision') {
         localStorage.setItem('visionModelProviderId', providerId);
         localStorage.setItem('visionModelKey', modelKey);
+      } else if (type === 'classification') {
+        localStorage.setItem('classificationModelProviderId', providerId);
+        localStorage.setItem('classificationModelKey', modelKey);
       } else {
         localStorage.setItem('embeddingModelProviderId', providerId);
         localStorage.setItem('embeddingModelKey', modelKey);
@@ -50,6 +54,8 @@ const ModelSelect = ({
           embeddingModelKey: type === 'embedding' ? modelKey : localStorage.getItem('embeddingModelKey'),
           visionModelProviderId: type === 'vision' ? providerId : localStorage.getItem('visionModelProviderId'),
           visionModelKey: type === 'vision' ? modelKey : localStorage.getItem('visionModelKey'),
+          classificationModelProviderId: type === 'classification' ? providerId : localStorage.getItem('classificationModelProviderId'),
+          classificationModelKey: type === 'classification' ? modelKey : localStorage.getItem('classificationModelKey'),
         }),
       });
     } catch (error) {
@@ -65,14 +71,16 @@ const ModelSelect = ({
       <div className="space-y-3 lg:space-y-5">
         <div>
           <h4 className="text-sm lg:text-sm text-black dark:text-white">
-            Select {type === 'chat' ? 'Chat Model' : type === 'vision' ? 'Vision Model' : 'Embedding Model'}
+            Select {type === 'chat' ? 'Chat Model' : type === 'vision' ? 'Vision Model' : type === 'classification' ? 'Classification Model (Fast Model)' : 'Embedding Model'}
           </h4>
           <p className="text-[11px] lg:text-xs text-black/50 dark:text-white/50">
             {type === 'chat'
               ? 'Choose which model to use for generating responses'
               : type === 'vision'
                 ? 'Choose which model to use for image analysis'
-                : 'Choose which model to use for generating embeddings'}
+                : type === 'classification'
+                  ? 'Choose a fast, lightweight model for query classification (optional; uses chat model if not set)'
+                  : 'Choose which model to use for generating embeddings'}
           </p>
         </div>
         <Select

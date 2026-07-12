@@ -1,40 +1,42 @@
-import z from 'zod';
-import { ClassifierInput } from './types';
+import { ClassifierInput, ClassifierOutput } from './types';
 import { classifierPrompt } from '@/lib/prompts/search/classifier';
 import formatChatHistoryAsString from '@/lib/utils/formatHistory';
 import memoryStore from '@/lib/memory/store';
 import { withRetry } from '@/lib/utils/withRetry';
 
-const schema = z.object({
-  classification: z.object({
-    skipSearch: z
-      .boolean()
-      .describe('Indicates whether to skip the search step.'),
-    personalSearch: z
-      .boolean()
-      .describe('Indicates whether to perform a personal search.'),
-    academicSearch: z
-      .boolean()
-      .describe('Indicates whether to perform an academic search.'),
-    discussionSearch: z
-      .boolean()
-      .describe('Indicates whether to perform a discussion search.'),
-    showWeatherWidget: z
-      .boolean()
-      .describe('Indicates whether to show the weather widget.'),
-    showStockWidget: z
-      .boolean()
-      .describe('Indicates whether to show the stock widget.'),
-    showCalculationWidget: z
-      .boolean()
-      .describe('Indicates whether to show the calculation widget.'),
-  }),
-  standaloneFollowUp: z
-    .string()
-    .describe(
-      "A self-contained, context-independent reformulation of the user's question.",
-    ),
-});
+const DEFAULT_OUTPUT: ClassifierOutput = {
+  classification: {
+    skipSearch: true,
+    personalSearch: false,
+    academicSearch: false,
+    discussionSearch: false,
+    showWeatherWidget: false,
+    showStockWidget: false,
+    showCalculationWidget: false,
+  },
+  standaloneFollowUp: '',
+};
+
+function parseClassifierResponse(raw: string): ClassifierOutput | null {
+  try {
+    const parsed = JSON.parse(raw);
+    const c = parsed.classification || parsed;
+    return {
+      classification: {
+        skipSearch: typeof c.skipSearch === 'boolean' ? c.skipSearch : true,
+        personalSearch: typeof c.personalSearch === 'boolean' ? c.personalSearch : false,
+        academicSearch: typeof c.academicSearch === 'boolean' ? c.academicSearch : false,
+        discussionSearch: typeof c.discussionSearch === 'boolean' ? c.discussionSearch : false,
+        showWeatherWidget: typeof c.showWeatherWidget === 'boolean' ? c.showWeatherWidget : false,
+        showStockWidget: typeof c.showStockWidget === 'boolean' ? c.showStockWidget : false,
+        showCalculationWidget: typeof c.showCalculationWidget === 'boolean' ? c.showCalculationWidget : false,
+      },
+      standaloneFollowUp: parsed.standaloneFollowUp || c.standaloneFollowUp || '',
+    };
+  } catch {
+    return null;
+  }
+}
 
 export const classify = async (input: ClassifierInput) => {
   let memoriesContext = '';
@@ -75,9 +77,11 @@ export const classify = async (input: ClassifierInput) => {
 
   const userContent = `<conversation_history>\n${formatChatHistoryAsString(input.chatHistory)}\n</conversation_history>\n<user_query>\n${input.query}\n</user_query>${memoriesContext ? `\n<user_memories>\n${memoriesContext}\n</user_memories>` : ''}${userProfileString}${dateTimeContext}`;
 
-  const output = await withRetry(
-    async () =>
-      input.llm.generateObject<typeof schema>({
+  const llm = input.classificationLlm || input.llm;
+
+  const raw = await withRetry(
+    async () => {
+      const result = await llm.generateText({
         messages: [
           {
             role: 'system',
@@ -85,16 +89,34 @@ export const classify = async (input: ClassifierInput) => {
           },
           {
             role: 'user',
-            content: userContent,
+            content: `${userContent}\n\nRespond with valid JSON only. No markdown, no code fences, no explanation.`,
           },
         ],
-        schema,
-      }),
+        options: { temperature: 0 },
+      });
+      return result.content;
+    },
     {
       timeout: 30000,
       maxRetries: 3,
     },
   );
 
-  return output;
+  const parsed = parseClassifierResponse(raw);
+  if (parsed) {
+    return parsed;
+  }
+
+  // Try to extract JSON from code fences
+  const jsonMatch = raw.match(/\{[\s\S]*\}/);
+  if (jsonMatch) {
+    const extracted = parseClassifierResponse(jsonMatch[0]);
+    if (extracted) return extracted;
+  }
+
+  console.warn('[Classifier] Failed to parse LLM response, using defaults:', raw.slice(0, 200));
+  return {
+    ...DEFAULT_OUTPUT,
+    standaloneFollowUp: input.query,
+  };
 };

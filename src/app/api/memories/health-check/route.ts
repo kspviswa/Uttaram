@@ -10,10 +10,10 @@ export const dynamic = 'force-dynamic';
 const actionSchema = z.object({
   type: z.enum(['delete', 'update']),
   id: z.string(),
-  newContent: z.string().optional(),
+  newContent: z.string().nullable(),
   newCategory: z
     .enum(['personal_info', 'preference', 'fact', 'project', 'other'])
-    .optional(),
+    .nullable(),
   reason: z.string(),
 });
 
@@ -95,19 +95,25 @@ export async function POST() {
         category: m.category,
       }));
 
-      const result = (await llm.generateObject({
-        messages: [
-          {
-            role: 'system',
-            content: HEALTH_CHECK_PROMPT,
-          },
-          {
-            role: 'user',
-            content: `Clean up these memories:\n${JSON.stringify(memoriesForLLM, null, 2)}`,
-          },
-        ],
-        schema: healthCheckOutputSchema,
-      })) as z.infer<typeof healthCheckOutputSchema>;
+      const TIMEOUT_MS = 60000;
+      const result = (await Promise.race([
+        llm.generateObject({
+          messages: [
+            {
+              role: 'system',
+              content: HEALTH_CHECK_PROMPT,
+            },
+            {
+              role: 'user',
+              content: `Clean up these memories:\n${JSON.stringify(memoriesForLLM, null, 2)}`,
+            },
+          ],
+          schema: healthCheckOutputSchema,
+        }),
+        new Promise<never>((_, reject) =>
+          setTimeout(() => reject(new Error(`LLM timed out after ${TIMEOUT_MS}ms`)), TIMEOUT_MS),
+        ),
+      ])) as z.infer<typeof healthCheckOutputSchema>;
 
       for (const action of result.actions) {
         if (action.type === 'delete') {
@@ -122,7 +128,7 @@ export async function POST() {
           if (mem && action.newContent) {
             await memoryStore.updateMemory(action.id, {
               content: action.newContent,
-              category: action.newCategory,
+              category: action.newCategory ?? undefined,
             });
             totalUpdated++;
             allDetails.push({

@@ -20,7 +20,7 @@ class APISearchAgent {
       console.error('Classifier failed, using defaults:', err);
       classification = {
         classification: {
-          skipSearch: false,
+          skipSearch: true,
           personalSearch: false,
           academicSearch: false,
           discussionSearch: false,

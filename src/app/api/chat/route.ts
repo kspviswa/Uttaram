@@ -53,6 +53,15 @@ const visionModelSchema: z.ZodType<ModelWithProvider | null> = z
   .optional()
   .default(null);
 
+const classificationModelSchema: z.ZodType<ModelWithProvider | null> = z
+  .object({
+    providerId: z.string(),
+    key: z.string(),
+  })
+  .nullable()
+  .optional()
+  .default(null);
+
 const bodySchema = z.object({
   message: messageSchema,
   optimizationMode: z.enum(['speed', 'balanced', 'quality'], {
@@ -68,6 +77,7 @@ const bodySchema = z.object({
   chatModel: chatModelSchema,
   embeddingModel: embeddingModelSchema,
   visionModel: visionModelSchema,
+  classificationModel: classificationModelSchema,
   systemInstructions: z.string().nullable().optional().default(''),
   userProfile: z
     .object({
@@ -174,12 +184,18 @@ export const POST = async (req: Request) => {
 
     const registry = new ModelRegistry();
 
-    const [llm, embedding] = await Promise.all([
+    const [llm, embedding, classificationLlm] = await Promise.all([
       registry.loadChatModel(body.chatModel.providerId, body.chatModel.key),
       registry.loadEmbeddingModel(
         body.embeddingModel.providerId,
         body.embeddingModel.key,
       ),
+      body.classificationModel?.providerId && body.classificationModel?.key
+        ? registry.loadChatModel(
+            body.classificationModel.providerId,
+            body.classificationModel.key,
+          )
+        : Promise.resolve(null),
     ]);
 
     const history: ChatTurnMessage[] = body.history.map((msg) => {
@@ -315,6 +331,7 @@ export const POST = async (req: Request) => {
         userProfile: body.userProfile || { name: '', location: '', aboutMe: '' },
         enableMemories: body.enableMemories,
         metadata: body.metadata,
+        classificationLlm,
         llmTimeout: searchConfig.llmTimeout || 60000,
         llmMaxRetries: searchConfig.llmMaxRetries || 3,
       },

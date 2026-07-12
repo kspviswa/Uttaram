@@ -5,24 +5,21 @@ It will be shared a detailed conversation history and a user query and it has to
 </role>
 
 <labels>
-NOTE: BY GENERAL KNOWLEDGE WE MEAN INFORMATION THAT IS OBVIOUS, WIDELY KNOWN, OR CAN BE INFERRED WITHOUT EXTERNAL SOURCES FOR EXAMPLE MATHEMATICAL FACTS, BASIC SCIENTIFIC KNOWLEDGE, COMMON HISTORICAL EVENTS, ETC.
-1. skipSearch (boolean): Deeply analyze whether the user's query can be answered without performing any search.
-   - Set it to true if the query is straightforward, factual, or can be answered based on general knowledge.
-   - Set it to true for writing tasks or greeting messages that do not require external information.
-   - Set it to true if weather, stock, or similar widgets can fully satisfy the user's request.
-   - Set it to false if the query requires up-to-date information, specific details, or context that cannot be inferred from general knowledge.
-   - ALWAYS SET SKIPSEARCH TO FALSE IF YOU ARE UNCERTAIN OR IF THE QUERY IS AMBIGUOUS OR IF YOU'RE NOT SURE.
+1. skipSearch (boolean): Determine whether the query can be answered from the model's own knowledge without web search.
+   - Set it to true for greetings, chit-chat, writing tasks, brainstorming, and general knowledge questions.
+   - Set it to true if weather, stock, or calculation widgets can fully satisfy the request.
+   - Set it to false ONLY if the query asks about current events, specific real-time data, or topics that clearly require up-to-date web information (e.g. "latest news on X", "what is the current price of Y", "recent developments in Z").
+   - When in doubt, default to true (answer from knowledge).
 2. personalSearch (boolean): Determine if the query requires searching through user uploaded documents.
    - Set it to true if the query explicitly references or implies the need to access user-uploaded documents for example "Determine the key points from the document I uploaded about..." or "Who is the author?", "Summarize the content of the document"
-   - Set it to false if the query does not reference user-uploaded documents or if the information can be obtained through general web search.
-   - ALWAYS SET PERSONALSEARCH TO FALSE IF YOU ARE UNCERTAIN OR IF THE QUERY IS AMBIGUOUS OR IF YOU'RE NOT SURE. AND SET SKIPSEARCH TO FALSE AS WELL.
+   - Set it to false otherwise.
 3. academicSearch (boolean): Assess whether the query requires searching academic databases or scholarly articles.
    - Set it to true if the query explicitly requests scholarly information, research papers, academic articles, or citations for example "Find recent studies on...", "What does the latest research say about...", or "Provide citations for..."
-   - Set it to false if the query can be answered through general web search or does not specifically request academic sources.
+   - Set it to false otherwise.
 4. discussionSearch (boolean): Evaluate if the query necessitates searching through online forums, discussion boards, or community Q&A platforms.
    - Set it to true if the query seeks opinions, personal experiences, community advice, or discussions for example "What do people think about...", "Are there any discussions on...", or "What are the common issues faced by..."
    - Set it to true if they're asking for reviews or feedback from users on products, services, or experiences.
-   - Set it to false if the query can be answered through general web search or does not specifically request information from discussion platforms.
+   - Set it to false otherwise.
 5. showWeatherWidget (boolean): Decide if displaying a weather widget would adequately address the user's query.
    - Set it to true if the user's query is specifically about current weather conditions, forecasts, or any weather-related information for a particular location.
    - Set it to true for queries like "What's the weather like in [Location]?" or "Will it rain tomorrow in [Location]?" or "Show me the weather" (Here they mean weather of their current location).

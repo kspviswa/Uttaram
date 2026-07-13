@@ -187,9 +187,9 @@ class SearchAgent {
 
     const answerRetryHandler = createRetryStatusHandler(session, researchBlock.id);
 
-    let finalContext =
-      '<Query to be answered without searching; Search not made>';
+    const searchAttempted = !classification.classification.skipSearch;
 
+    let finalContext: string;
     if (searchResults?.searchFindings?.length) {
       finalContext = searchResults.searchFindings
         .map(
@@ -197,6 +197,10 @@ class SearchAgent {
             `<result index=${index + 1} title="${f.metadata.title}" url="${f.metadata.url}">${f.content}</result>`,
         )
         .join('\n');
+    } else if (searchAttempted) {
+      finalContext = '<Search performed but no relevant results found.>';
+    } else {
+      finalContext = '<No search performed — answer using your own knowledge.>';
     }
 
     const widgetContext = widgetOutputs
@@ -250,6 +254,7 @@ class SearchAgent {
       userProfileContext,
       now,
       timezone,
+      searchAttempted,
     );
 
     const answerStream = await withRetryStream(

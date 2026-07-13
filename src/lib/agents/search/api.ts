@@ -102,6 +102,9 @@ class APISearchAgent {
       input.config.mode,
       undefined,
       userProfileContext,
+      undefined,
+      undefined,
+      true,
     );
 
     const answerStream = input.config.llm.streamText({

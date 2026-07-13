@@ -14,12 +14,12 @@ import { Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 
 const llmTimeoutField: UIConfigField = {
-  name: 'LLM Timeout (ms)',
+  name: 'LLM Timeout (s)',
   key: 'llmTimeout',
   type: 'number',
   required: false,
-  description: 'Timeout in milliseconds for LLM inference calls',
-  placeholder: '60000',
+  description: 'Timeout in seconds for LLM inference calls',
+  placeholder: '60',
   default: 60000,
   scope: 'server',
 };
@@ -33,6 +33,61 @@ const llmRetryField: UIConfigField = {
   placeholder: '3',
   default: 3,
   scope: 'server',
+};
+
+const LlmTimeoutInput = ({ value }: { value: number }) => {
+  const [val, setVal] = useState(Math.round(value / 1000));
+  const [saving, setSaving] = useState(false);
+
+  const handleSave = async (seconds: number) => {
+    const clamped = Math.max(1, seconds);
+    setVal(clamped);
+    setSaving(true);
+    try {
+      const res = await fetch('/api/config', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ key: 'search.llmTimeout', value: String(clamped * 1000) }),
+      });
+      if (!res.ok) throw new Error('Failed to save');
+    } catch {
+      toast.error('Failed to save LLM timeout');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <section className="rounded-xl border border-light-200 bg-light-primary/80 p-4 lg:p-6 transition-colors dark:border-dark-200 dark:bg-dark-primary/80">
+      <div className="space-y-3 lg:space-y-5">
+        <div>
+          <h4 className="text-sm lg:text-sm text-black dark:text-white">
+            LLM Timeout (s)
+          </h4>
+          <p className="text-[11px] lg:text-xs text-black/50 dark:text-white/50">
+            Timeout in seconds for LLM inference calls
+          </p>
+        </div>
+        <div className="relative">
+          <input
+            value={val}
+            onChange={(e) => setVal(Number(e.target.value))}
+            onBlur={(e) => handleSave(Number(e.target.value))}
+            className="w-full rounded-lg border border-light-200 dark:border-dark-200 bg-light-primary dark:bg-dark-primary px-3 py-2 lg:px-4 lg:py-3 pr-10 !text-xs lg:!text-[13px] text-black/80 dark:text-white/80 placeholder:text-black/40 dark:placeholder:text-white/40 focus-visible:outline-none focus-visible:border-light-300 dark:focus-visible:border-dark-300 transition-colors disabled:cursor-not-allowed disabled:opacity-60"
+            type="number"
+            min={1}
+            placeholder="60"
+            disabled={saving}
+          />
+          {saving && (
+            <span className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-black/40 dark:text-white/40">
+              <Loader2 className="h-4 w-4 animate-spin" />
+            </span>
+          )}
+        </div>
+      </div>
+    </section>
+  );
 };
 
 const LlmThrottleSettings = () => {
@@ -182,11 +237,7 @@ const Models = ({
         <h3 className="text-xs lg:text-xs text-black/70 dark:text-white/70 mb-4">
           LLM Settings
         </h3>
-        <SettingsField
-          field={llmTimeoutField}
-          value={searchConfig.llmTimeout ?? llmTimeoutField.default}
-          dataAdd="search"
-        />
+        <LlmTimeoutInput value={searchConfig.llmTimeout ?? 60000} />
         <div className="mt-4">
           <SettingsField
             field={llmRetryField}

@@ -3,6 +3,8 @@ import { ModelWithProvider } from '@/lib/models/types';
 import { getAllSettings } from '@/lib/config/settings';
 import ThrottledLLM from '@/lib/models/throttledLLM';
 import { globalLlmSemaphore } from '@/lib/models/throttle';
+import configManager from '@/lib/config';
+import { withRetry } from '@/lib/utils/withRetry';
 
 interface SummarizeBody {
   chatHistory: [string, string][];
@@ -32,19 +34,26 @@ export const POST = async (req: Request) => {
       )
       .join('\n\n');
 
-    const result = await mainLlm.generateText({
-      messages: [
-        {
-          role: 'system',
-          content:
-            'You are an expert at summarizing conversations. Provide a concise, well-structured summary of the following conversation. Capture key questions, answers, insights, and conclusions.',
-        },
-        {
-          role: 'user',
-          content: conversationText,
-        },
-      ],
-    });
+    const searchConfig = configManager.getCurrentConfig().search;
+    const result = await withRetry(
+      () => mainLlm.generateText({
+        messages: [
+          {
+            role: 'system',
+            content:
+              'You are an expert at summarizing conversations. Provide a concise, well-structured summary of the following conversation. Capture key questions, answers, insights, and conclusions.',
+          },
+          {
+            role: 'user',
+            content: conversationText,
+          },
+        ],
+      }),
+      {
+        timeout: searchConfig.llmTimeout || 60000,
+        maxRetries: searchConfig.llmMaxRetries || 3,
+      },
+    );
 
     return Response.json({ summary: result.content }, { status: 200 });
   } catch (err) {

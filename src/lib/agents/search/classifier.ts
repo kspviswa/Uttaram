@@ -97,8 +97,8 @@ export const classify = async (input: ClassifierInput) => {
       return result.content;
     },
     {
-      timeout: 30000,
-      maxRetries: 3,
+      timeout: input.llmTimeout || 30000,
+      maxRetries: input.llmMaxRetries || 3,
     },
   );
 

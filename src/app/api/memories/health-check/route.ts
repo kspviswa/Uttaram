@@ -6,6 +6,7 @@ import { getAllSettings } from '@/lib/config/settings';
 import ThrottledLLM from '@/lib/models/throttledLLM';
 import { globalLlmSemaphore } from '@/lib/models/throttle';
 import configManager from '@/lib/config';
+import { withRetry } from '@/lib/utils/withRetry';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -106,9 +107,8 @@ export async function POST() {
       }));
 
       const searchConfig = configManager.getCurrentConfig().search;
-      const TIMEOUT_MS = searchConfig.llmTimeout || 60000;
-      const result = (await Promise.race([
-        mainLlm.generateObject({
+      const result = (await withRetry(
+        () => mainLlm.generateObject({
           messages: [
             {
               role: 'system',
@@ -121,10 +121,11 @@ export async function POST() {
           ],
           schema: healthCheckOutputSchema,
         }),
-        new Promise<never>((_, reject) =>
-          setTimeout(() => reject(new Error(`LLM timed out after ${TIMEOUT_MS}ms`)), TIMEOUT_MS),
-        ),
-      ])) as z.infer<typeof healthCheckOutputSchema>;
+        {
+          timeout: searchConfig.llmTimeout || 60000,
+          maxRetries: searchConfig.llmMaxRetries || 3,
+        },
+      )) as z.infer<typeof healthCheckOutputSchema>;
 
       for (const action of result.actions) {
         if (action.type === 'delete') {

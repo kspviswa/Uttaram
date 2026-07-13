@@ -4,6 +4,7 @@ import { classify } from './classifier';
 import Researcher from './researcher';
 import { getWriterPrompt } from '@/lib/prompts/search/writer';
 import { WidgetExecutor } from './widgets';
+import { withRetryStream } from '@/lib/utils/withRetry';
 
 class APISearchAgent {
   async searchAsync(session: SessionManager, input: SearchAgentInput) {
@@ -15,6 +16,8 @@ class APISearchAgent {
         query: input.followUp,
         llm: input.config.llm,
         userProfile: input.config.userProfile,
+        llmTimeout: input.config.llmTimeout,
+        llmMaxRetries: input.config.llmMaxRetries,
       });
     } catch (err) {
       console.error('Classifier failed, using defaults:', err);
@@ -107,19 +110,25 @@ class APISearchAgent {
       true,
     );
 
-    const answerStream = input.config.llm.streamText({
-      messages: [
-        {
-          role: 'system',
-          content: writerPrompt,
-        },
-        ...input.chatHistory,
-        {
-          role: 'user',
-          content: input.followUp,
-        },
-      ],
-    });
+    const answerStream = await withRetryStream(
+      (signal) => input.config.llm.streamText({
+        messages: [
+          {
+            role: 'system',
+            content: writerPrompt,
+          },
+          ...input.chatHistory,
+          {
+            role: 'user',
+            content: input.followUp,
+          },
+        ],
+      }),
+      {
+        timeout: input.config.llmTimeout || 60000,
+        maxRetries: input.config.llmMaxRetries || 3,
+      },
+    );
 
     for await (const chunk of answerStream) {
       session.emit('data', {

@@ -5,6 +5,8 @@ import { ModelWithProvider } from '@/lib/models/types';
 import { getAllSettings } from '@/lib/config/settings';
 import ThrottledLLM from '@/lib/models/throttledLLM';
 import { globalLlmSemaphore } from '@/lib/models/throttle';
+import configManager from '@/lib/config';
+import { withRetry } from '@/lib/utils/withRetry';
 
 export const POST = async (req: Request) => {
   try {
@@ -36,19 +38,26 @@ export const POST = async (req: Request) => {
       .map((msg: any) => `User: ${msg.query}\nAssistant: ${extractText(msg.responseBlocks)}`)
       .join('\n\n');
 
-    const summaryResult = await mainLlm.generateText({
-      messages: [
-        {
-          role: 'system',
-          content:
-            'You are an expert at summarizing conversations. Provide a concise, well-structured summary that captures the key questions, answers, insights, and conclusions from the conversation. Write in a clear narrative style.',
-        },
-        {
-          role: 'user',
-          content: conversationText,
-        },
-      ],
-    });
+    const searchConfig = configManager.getCurrentConfig().search;
+    const summaryResult = await withRetry(
+      () => mainLlm.generateText({
+        messages: [
+          {
+            role: 'system',
+            content:
+              'You are an expert at summarizing conversations. Provide a concise, well-structured summary that captures the key questions, answers, insights, and conclusions from the conversation. Write in a clear narrative style.',
+          },
+          {
+            role: 'user',
+            content: conversationText,
+          },
+        ],
+      }),
+      {
+        timeout: searchConfig.llmTimeout || 60000,
+        maxRetries: searchConfig.llmMaxRetries || 3,
+      },
+    );
 
     const newChatId = crypto.randomUUID();
     const now = new Date().toISOString();

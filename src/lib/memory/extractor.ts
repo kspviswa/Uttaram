@@ -6,6 +6,8 @@ import ModelRegistry from '@/lib/models/registry';
 import memoryStore from './store';
 import { MemoryCategory } from './types';
 import { getAllSettings } from '@/lib/config/settings';
+import configManager from '@/lib/config';
+import { withRetry } from '@/lib/utils/withRetry';
 
 const extractionSchema = z.object({
   memories: z.array(
@@ -105,13 +107,20 @@ export async function extractMemories(): Promise<{
     const messagesText = batch.map((m) => m.query).join('\n---\n');
 
     try {
-      const result = (await llm.generateObject({
-        messages: [
-          { role: 'system', content: buildExtractionPrompt(messagesText) },
-          { role: 'user', content: 'Extract personal facts from these messages.' },
-        ],
-        schema: extractionSchema,
-      })) as z.infer<typeof extractionSchema>;
+      const searchConfig = configManager.getCurrentConfig().search;
+      const result = (await withRetry(
+        () => llm.generateObject({
+          messages: [
+            { role: 'system', content: buildExtractionPrompt(messagesText) },
+            { role: 'user', content: 'Extract personal facts from these messages.' },
+          ],
+          schema: extractionSchema,
+        }),
+        {
+          timeout: searchConfig.llmTimeout || 60000,
+          maxRetries: searchConfig.llmMaxRetries || 3,
+        },
+      )) as z.infer<typeof extractionSchema>;
 
       if (result.memories && result.memories.length > 0) {
         for (const fact of result.memories) {

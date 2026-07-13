@@ -70,6 +70,8 @@ export type ClassifierInput = {
   enableMemories?: boolean;
   userProfile?: UserProfile;
   metadata?: ClientMetadata;
+  llmTimeout?: number;
+  llmMaxRetries?: number;
 };
 
 export type ClassifierOutput = {

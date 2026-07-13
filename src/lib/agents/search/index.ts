@@ -105,6 +105,8 @@ class SearchAgent {
         enableMemories: input.config.enableMemories,
         userProfile: input.config.userProfile,
         metadata: input.config.metadata,
+        llmTimeout: input.config.llmTimeout,
+        llmMaxRetries: input.config.llmMaxRetries,
       });
     } catch (err) {
       console.error('Classifier failed, using defaults:', err);

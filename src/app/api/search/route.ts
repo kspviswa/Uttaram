@@ -7,6 +7,7 @@ import APISearchAgent from '@/lib/agents/search/api';
 import { getAllSettings } from '@/lib/config/settings';
 import ThrottledLLM from '@/lib/models/throttledLLM';
 import { globalLlmSemaphore } from '@/lib/models/throttle';
+import configManager from '@/lib/config';
 
 interface ChatRequestBody {
   optimizationMode: 'speed' | 'balanced' | 'quality';
@@ -51,6 +52,8 @@ export const POST = async (req: Request) => {
       mainLlm = new ThrottledLLM(llm);
     }
 
+    const searchConfig = configManager.getCurrentConfig().search;
+
     const history: ChatTurnMessage[] = body.history.map((msg) => {
       return msg[0] === 'human'
         ? { role: 'user', content: msg[1] }
@@ -70,6 +73,8 @@ export const POST = async (req: Request) => {
         mode: body.optimizationMode,
         fileIds: [],
         systemInstructions: body.systemInstructions || '',
+        llmTimeout: searchConfig.llmTimeout || 60000,
+        llmMaxRetries: searchConfig.llmMaxRetries || 3,
       },
       followUp: body.query,
       chatId: crypto.randomUUID(),

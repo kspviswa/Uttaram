@@ -95,15 +95,20 @@ const MessageBox = ({
     messages,
     researchEnded,
     chatHistory,
+    files: chatFiles,
+    fileIds: chatFileIds,
   } = useChat();
 
   const IMAGE_EXTS = new Set(['png', 'jpg', 'jpeg', 'gif', 'webp']);
   const uploadsBase = '/api/uploads';
-  const messageFiles = (section.message.files || []).map((f) => ({
+  const perMessageFiles = (section.message.files || []).map((f) => ({
     fileName: f.name,
     fileExtension: f.name.split('.').pop() || '',
     fileId: f.fileId,
   }));
+  const messageFiles = perMessageFiles.length > 0
+    ? perMessageFiles
+    : chatFiles.filter((f) => chatFileIds.includes(f.fileId));
 
   const parsedMessage = renderMath(section.parsedTextBlocks.join('\n\n'));
   const speechMessage = section.speechMessage || '';

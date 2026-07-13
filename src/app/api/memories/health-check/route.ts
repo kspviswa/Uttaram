@@ -5,6 +5,7 @@ import ModelRegistry from '@/lib/models/registry';
 import { getAllSettings } from '@/lib/config/settings';
 import ThrottledLLM from '@/lib/models/throttledLLM';
 import { globalLlmSemaphore } from '@/lib/models/throttle';
+import configManager from '@/lib/config';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -104,7 +105,8 @@ export async function POST() {
         category: m.category,
       }));
 
-      const TIMEOUT_MS = 60000;
+      const searchConfig = configManager.getCurrentConfig().search;
+      const TIMEOUT_MS = searchConfig.llmTimeout || 60000;
       const result = (await Promise.race([
         mainLlm.generateObject({
           messages: [

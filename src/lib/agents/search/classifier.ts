@@ -104,6 +104,9 @@ export const classify = async (input: ClassifierInput) => {
 
   const parsed = parseClassifierResponse(raw);
   if (parsed) {
+    console.log(
+      `[Classifier] query="${input.query.slice(0, 80)}" skipSearch=${parsed.classification.skipSearch} personalSearch=${parsed.classification.personalSearch} academicSearch=${parsed.classification.academicSearch}`,
+    );
     return parsed;
   }
 
@@ -111,7 +114,12 @@ export const classify = async (input: ClassifierInput) => {
   const jsonMatch = raw.match(/\{[\s\S]*\}/);
   if (jsonMatch) {
     const extracted = parseClassifierResponse(jsonMatch[0]);
-    if (extracted) return extracted;
+    if (extracted) {
+      console.log(
+        `[Classifier] query="${input.query.slice(0, 80)}" skipSearch=${extracted.classification.skipSearch} personalSearch=${extracted.classification.personalSearch} academicSearch=${extracted.classification.academicSearch}`,
+      );
+      return extracted;
+    }
   }
 
   console.warn('[Classifier] Failed to parse LLM response, using defaults:', raw.slice(0, 200));

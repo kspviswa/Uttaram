@@ -35,6 +35,9 @@ class APISearchAgent {
       };
     }
 
+    const searchAttempted = !classification.classification.skipSearch;
+    session.emit('data', { type: 'searchPerformed', searchPerformed: searchAttempted });
+
     const widgetPromise = WidgetExecutor.executeAll({
       classification,
       chatHistory: input.chatHistory,

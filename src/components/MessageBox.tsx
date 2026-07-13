@@ -194,6 +194,28 @@ const MessageBox = ({
             {displayQuery}
           </h2>
           <div className="flex items-center gap-1 pt-1 flex-shrink-0">
+            {section.message.searchPerformed !== undefined && (
+              <span
+                className={`flex items-center gap-1 text-[10px] font-medium px-1.5 py-0.5 rounded-md border transition-colors duration-300 ${
+                  section.message.searchPerformed
+                    ? 'text-green-600 dark:text-green-400 border-green-300 dark:border-green-700 bg-green-50 dark:bg-green-900/20'
+                    : 'text-zinc-400 dark:text-zinc-500 border-zinc-200 dark:border-zinc-700 bg-zinc-50 dark:bg-zinc-900/20'
+                }`}
+                title={
+                  section.message.searchPerformed
+                    ? 'Answered using live web search'
+                    : 'Answered from model knowledge (frozen)'
+                }
+              >
+                <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  {section.message.searchPerformed ? (
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 17.93c-3.95-.49-7-3.85-7-7.93 0-.62.08-1.21.21-1.79L9 15v1c0 1.1.9 2 2 2v1.93zm6.9-2.54c-.26-.81-1-1.39-1.9-1.39h-1v-3c0-.55-.45-1-1-1H8v-2h2c.55 0 1-.45 1-1V7h2c1.1 0 2-.9 2-2v-.41c2.93 1.19 5 4.06 5 7.41 0 2.08-.8 3.97-2.1 5.39z" />
+                  ) : (
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 7v10c0 2.21 3.582 4 8 4s8-1.79 8-4V7M4 7c0 2.21 3.582 4 8 4s8-1.79 8-4M4 7c0-2.21 3.582-4 8-4s8 1.79 8 4m0 5c0 2.21-3.582 4-8 4s-8-1.79-8-4" />
+                  )}
+                </svg>
+              </span>
+            )}
             <button
               onClick={async () => {
                 try {

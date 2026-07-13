@@ -222,8 +222,12 @@ const loadMessages = async (
   const data = await res.json();
 
   const messages = (data.messages || []) as Message[];
+  const enrichedMessages = messages.map((msg) => ({
+    ...msg,
+    searchPerformed: msg.responseBlocks?.some((b) => b.type === 'source') ?? false,
+  }));
 
-  setMessages(messages);
+  setMessages(enrichedMessages);
 
   if (messages.length > 0) {
     const last = messages[messages.length - 1];
@@ -668,6 +672,16 @@ export const ChatProvider = ({ children }: { children: React.ReactNode }) => {
           prev.map((msg) =>
             msg.messageId === messageId
               ? { ...msg, phase: data.phase }
+              : msg,
+          ),
+        );
+      }
+
+      if (data.type === 'searchPerformed') {
+        setMessages((prev) =>
+          prev.map((msg) =>
+            msg.messageId === messageId
+              ? { ...msg, searchPerformed: data.searchPerformed }
               : msg,
           ),
         );

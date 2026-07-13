@@ -132,6 +132,8 @@ class SearchAgent {
       };
     }
 
+    const searchAttempted = !classification.classification.skipSearch;
+    session.emit('data', { type: 'searchPerformed', searchPerformed: searchAttempted });
     session.emit('data', { type: 'phase', phase: 'researching' });
     await this.syncBlocksToDb(
       input.chatId,
@@ -196,8 +198,6 @@ class SearchAgent {
     );
 
     const answerRetryHandler = createRetryStatusHandler(session, researchBlock.id);
-
-    const searchAttempted = !classification.classification.skipSearch;
 
     let finalContext: string;
     if (searchResults?.searchFindings?.length) {

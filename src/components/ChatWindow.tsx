@@ -24,6 +24,7 @@ export interface Message extends BaseMessage {
   phase?: 'classifying' | 'researching' | 'writing';
   usage?: TokenUsage | null;
   files?: { name: string; fileId: string }[];
+  searchPerformed?: boolean;
 }
 
 export interface File {

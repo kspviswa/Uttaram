@@ -22,6 +22,8 @@ const DEFAULT_SETTINGS: Record<string, any> = {
   classificationModelProviderId: '',
   classificationModelKey: '',
   contextLength: '8192',
+  throttleEnabled: false,
+  maxParallelLlmCalls: 2,
 };
 
 function serialize(value: any): string {

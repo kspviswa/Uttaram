@@ -2,6 +2,9 @@ import db from '@/lib/db';
 import { chats, messages } from '@/lib/db/schema';
 import ModelRegistry from '@/lib/models/registry';
 import { ModelWithProvider } from '@/lib/models/types';
+import { getAllSettings } from '@/lib/config/settings';
+import ThrottledLLM from '@/lib/models/throttledLLM';
+import { globalLlmSemaphore } from '@/lib/models/throttle';
 
 export const POST = async (req: Request) => {
   try {
@@ -22,11 +25,18 @@ export const POST = async (req: Request) => {
       chatModel.key,
     );
 
+    const settings = await getAllSettings();
+    let mainLlm = llm;
+    if (settings.throttleEnabled) {
+      globalLlmSemaphore.setMax(settings.maxParallelLlmCalls);
+      mainLlm = new ThrottledLLM(llm);
+    }
+
     const conversationText = sourceMessages
       .map((msg: any) => `User: ${msg.query}\nAssistant: ${extractText(msg.responseBlocks)}`)
       .join('\n\n');
 
-    const summaryResult = await llm.generateText({
+    const summaryResult = await mainLlm.generateText({
       messages: [
         {
           role: 'system',

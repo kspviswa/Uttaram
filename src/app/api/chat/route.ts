@@ -13,6 +13,9 @@ import { extractMemories } from '@/lib/memory/extractor';
 import { analyzeImagesWithVLM } from '@/lib/vision/analyze';
 import path from 'path';
 import configManager from '@/lib/config';
+import { getAllSettings } from '@/lib/config/settings';
+import ThrottledLLM from '@/lib/models/throttledLLM';
+import { globalLlmSemaphore } from '@/lib/models/throttle';
 
 const IMAGE_EXTS = new Set(['.png', '.jpg', '.jpeg', '.gif', '.webp']);
 
@@ -198,6 +201,17 @@ export const POST = async (req: Request) => {
         : Promise.resolve(null),
     ]);
 
+    const llmSettings = await getAllSettings();
+    let mainLlm = llm;
+    let classLlm = classificationLlm;
+    if (llmSettings.throttleEnabled) {
+      globalLlmSemaphore.setMax(llmSettings.maxParallelLlmCalls);
+      mainLlm = new ThrottledLLM(llm);
+      if (classificationLlm) {
+        classLlm = new ThrottledLLM(classificationLlm);
+      }
+    }
+
     const history: ChatTurnMessage[] = body.history.map((msg) => {
       if (msg[0] === 'human') {
         return {
@@ -222,8 +236,11 @@ export const POST = async (req: Request) => {
         let vllm;
         if (visionModelInfo && visionModelInfo.providerId && visionModelInfo.key) {
           vllm = await registry.loadChatModel(visionModelInfo.providerId, visionModelInfo.key);
+          if (llmSettings.throttleEnabled) {
+            vllm = new ThrottledLLM(vllm);
+          }
         } else {
-          vllm = llm;
+          vllm = mainLlm;
         }
         const vlmAnalysis = await analyzeImagesWithVLM(
           vllm,
@@ -322,7 +339,7 @@ export const POST = async (req: Request) => {
       chatId: body.message.chatId,
       messageId: body.message.messageId,
       config: {
-        llm,
+        llm: mainLlm,
         embedding: embedding,
         sources: body.sources as SearchSources[],
         mode: body.optimizationMode,
@@ -331,7 +348,7 @@ export const POST = async (req: Request) => {
         userProfile: body.userProfile || { name: '', location: '', aboutMe: '' },
         enableMemories: body.enableMemories,
         metadata: body.metadata,
-        classificationLlm,
+        classificationLlm: classLlm,
         llmTimeout: searchConfig.llmTimeout || 60000,
         llmMaxRetries: searchConfig.llmMaxRetries || 3,
       },

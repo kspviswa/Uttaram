@@ -3,6 +3,8 @@ import { z } from 'zod';
 import memoryStore from '@/lib/memory/store';
 import ModelRegistry from '@/lib/models/registry';
 import { getAllSettings } from '@/lib/config/settings';
+import ThrottledLLM from '@/lib/models/throttledLLM';
+import { globalLlmSemaphore } from '@/lib/models/throttle';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -68,6 +70,13 @@ export async function POST() {
     }
 
     const llm = await registry.loadChatModel(chatProviderId, chatModelKey);
+
+    let mainLlm = llm;
+    if (settings.throttleEnabled) {
+      globalLlmSemaphore.setMax(settings.maxParallelLlmCalls);
+      mainLlm = new ThrottledLLM(llm);
+    }
+
     const allMemories = await memoryStore.listMemories();
     const totalBefore = allMemories.length;
 
@@ -97,7 +106,7 @@ export async function POST() {
 
       const TIMEOUT_MS = 60000;
       const result = (await Promise.race([
-        llm.generateObject({
+        mainLlm.generateObject({
           messages: [
             {
               role: 'system',

@@ -36,3 +36,9 @@ export const getUserName = () => getClientConfig('userName', '');
 export const getLocation = () => getClientConfig('location', '');
 
 export const getAboutMe = () => getClientConfig('aboutMe', '');
+
+export const getThrottleEnabled = () =>
+  getClientConfig('throttleEnabled', 'false') === 'true';
+
+export const getMaxParallelLlmCalls = () =>
+  parseInt(getClientConfig('maxParallelLlmCalls', '2'), 10);

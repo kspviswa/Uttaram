@@ -4,6 +4,9 @@ import SessionManager from '@/lib/session';
 import { ChatTurnMessage } from '@/lib/types';
 import { SearchSources } from '@/lib/agents/search/types';
 import APISearchAgent from '@/lib/agents/search/api';
+import { getAllSettings } from '@/lib/config/settings';
+import ThrottledLLM from '@/lib/models/throttledLLM';
+import { globalLlmSemaphore } from '@/lib/models/throttle';
 
 interface ChatRequestBody {
   optimizationMode: 'speed' | 'balanced' | 'quality';
@@ -41,6 +44,13 @@ export const POST = async (req: Request) => {
       ),
     ]);
 
+    const llmSettings = await getAllSettings();
+    let mainLlm = llm;
+    if (llmSettings.throttleEnabled) {
+      globalLlmSemaphore.setMax(llmSettings.maxParallelLlmCalls);
+      mainLlm = new ThrottledLLM(llm);
+    }
+
     const history: ChatTurnMessage[] = body.history.map((msg) => {
       return msg[0] === 'human'
         ? { role: 'user', content: msg[1] }
@@ -55,7 +65,7 @@ export const POST = async (req: Request) => {
       chatHistory: history,
       config: {
         embedding: embeddings,
-        llm: llm,
+        llm: mainLlm,
         sources: body.sources,
         mode: body.optimizationMode,
         fileIds: [],

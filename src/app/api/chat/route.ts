@@ -324,6 +324,15 @@ export const POST = async (req: Request) => {
               }) + '\n',
             ),
           );
+        } else if (data.type === 'searchPerformed') {
+          writer.write(
+            encoder.encode(
+              JSON.stringify({
+                type: 'searchPerformed',
+                searchPerformed: data.searchPerformed,
+              }) + '\n',
+            ),
+          );
         }
       } else if (event === 'end') {
         writer.write(

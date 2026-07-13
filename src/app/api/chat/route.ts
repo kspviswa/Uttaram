@@ -148,12 +148,36 @@ const ensureChatExists = async (input: {
         }),
         projectId: input.projectId || null,
       });
-    } else if (exists.title === 'New Chat') {
-      await db
-        .update(chats)
-        .set({ title: input.query })
-        .where(eq(chats.id, input.id))
-        .execute();
+    } else {
+      const existingFileIds = new Set(
+        (exists.files as Array<{ fileId: string; name: string }> | null)?.map(
+          (f) => f.fileId,
+        ) ?? [],
+      );
+      const newFiles = input.fileIds
+        .filter((id) => !existingFileIds.has(id))
+        .map((id) => ({
+          fileId: id,
+          name: UploadManager.getFile(id)?.name || 'Uploaded File',
+        }));
+      const updateData: Record<string, any> = {};
+      if (exists.title === 'New Chat') {
+        updateData.title = input.query;
+      }
+      if (newFiles.length > 0) {
+        updateData.files = [
+          ...(exists.files as Array<{ fileId: string; name: string }> | null ??
+            []),
+          ...newFiles,
+        ];
+      }
+      if (Object.keys(updateData).length > 0) {
+        await db
+          .update(chats)
+          .set(updateData)
+          .where(eq(chats.id, input.id))
+          .execute();
+      }
     }
   } catch (err) {
     console.error('Failed to check/save chat:', err);

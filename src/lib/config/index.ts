@@ -140,6 +140,16 @@ class ConfigManager {
         default: true,
         scope: 'client',
       },
+      {
+        name: 'Enable Suggestions',
+        key: 'enableSuggestions',
+        type: 'switch',
+        required: false,
+        description:
+          'Generate follow-up question suggestions after each response. Disable to reduce LLM calls.',
+        default: true,
+        scope: 'client',
+      },
     ],
     modelProviders: [],
     search: [

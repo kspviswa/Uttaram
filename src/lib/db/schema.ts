@@ -25,6 +25,7 @@ export const messages = sqliteTable('messages', {
   files: text('files', { mode: 'json' })
     .$type<DBFile[]>()
     .default(sql`'[]'`),
+  embedding: text('embedding'),
 });
 
 interface DBFile {
@@ -75,6 +76,7 @@ export const chats = sqliteTable('chats', {
     .default(sql`'[]'`),
   projectId: text('projectId'),
   parentId: text('parentId'),
+  embedding: text('embedding'),
 });
 
 export const chatRelations = sqliteTable('chat_relations', {

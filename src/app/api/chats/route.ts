@@ -1,5 +1,6 @@
 import db from '@/lib/db';
 import { chats } from '@/lib/db/schema';
+import embeddingService from '@/lib/embedding/service';
 
 export const POST = async (req: Request) => {
   try {
@@ -20,6 +21,11 @@ export const POST = async (req: Request) => {
       sources: [],
       files: [],
       projectId: projectId || null,
+    });
+
+    // Embed chat title asynchronously
+    embeddingService.embedChat(id).catch((err) => {
+      console.error('[ChatsAPI] Failed to embed chat:', err);
     });
 
     return Response.json({ chat: { id, title: title.trim(), createdAt: now, projectId: projectId || null } }, { status: 201 });

@@ -7,6 +7,7 @@ import ThrottledLLM from '@/lib/models/throttledLLM';
 import { globalLlmSemaphore } from '@/lib/models/throttle';
 import configManager from '@/lib/config';
 import { withRetry } from '@/lib/utils/withRetry';
+import embeddingService from '@/lib/embedding/service';
 
 export const POST = async (req: Request) => {
   try {
@@ -70,6 +71,11 @@ export const POST = async (req: Request) => {
       files: [],
       projectId: null,
       parentId: chatId || null,
+    });
+
+    // Embed forked chat asynchronously
+    embeddingService.embedChat(newChatId).catch((err) => {
+      console.error('[ForkAPI] Failed to embed chat:', err);
     });
 
     const summaryMessageId = crypto.randomUUID();

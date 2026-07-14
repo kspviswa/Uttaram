@@ -14,6 +14,7 @@ import memoryStore from '@/lib/memory/store';
 import { withRetryStream } from '@/lib/utils/withRetry';
 import { createRetryStatusHandler } from '@/lib/utils/emitRetryStatus';
 import UploadManager from '@/lib/uploads/manager';
+import embeddingService from '@/lib/embedding/service';
 
 class SearchAgent {
   private async syncBlocksToDb(
@@ -65,6 +66,11 @@ class SearchAgent {
         responseBlocks: [],
         phase: 'classifying',
         files: fileRecords,
+      });
+
+      // Embed user query asynchronously (don't block the response)
+      embeddingService.embedMessage(input.messageId).catch((err) => {
+        console.error('[SearchAgent] Failed to embed message:', err);
       });
     } else {
       await db

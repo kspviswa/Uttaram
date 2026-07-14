@@ -16,7 +16,7 @@ import { useParams, useSearchParams } from 'next/navigation';
 import { toast } from 'sonner';
 import { getSuggestions } from '../actions';
 import { MinimalProvider } from '../models/types';
-import { getAutoMediaSearch } from '../config/clientRegistry';
+import { getAutoMediaSearch, getEnableSuggestions } from '../config/clientRegistry';
 import { applyPatch } from 'rfc6902';
 import { Widget } from '@/components/ChatWindow';
 import { convertLatex } from '@/lib/latex';
@@ -833,7 +833,9 @@ export const ChatProvider = ({ children }: { children: React.ReactNode }) => {
           (block) => block.type === 'suggestion',
         );
 
-        if (hasSourceBlocks && !hasSuggestions) {
+        const enableSuggestions = getEnableSuggestions();
+
+        if (hasSourceBlocks && !hasSuggestions && enableSuggestions) {
           const suggestions = await getSuggestions(newHistory);
           const suggestionBlock: Block = {
             id: crypto.randomBytes(7).toString('hex'),

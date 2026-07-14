@@ -4,6 +4,7 @@ import { cn } from '@/lib/utils';
 import {
   BookOpenText,
   BrainCircuit,
+  BarChart3,
   Home,
   Search,
   Settings,
@@ -53,6 +54,12 @@ const Sidebar = ({ children }: { children: React.ReactNode }) => {
       href: '/memories',
       active: segments.includes('memories'),
       label: 'Memories',
+    },
+    {
+      icon: BarChart3,
+      href: '/analytics',
+      active: segments.includes('analytics'),
+      label: 'Analytics',
     },
     {
       icon: Settings,

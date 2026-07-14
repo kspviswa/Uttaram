@@ -17,6 +17,7 @@ import { getAllSettings } from '@/lib/config/settings';
 import ThrottledLLM from '@/lib/models/throttledLLM';
 import { globalLlmSemaphore } from '@/lib/models/throttle';
 import { withRetry } from '@/lib/utils/withRetry';
+import embeddingService from '@/lib/embedding/service';
 
 const IMAGE_EXTS = new Set(['.png', '.jpg', '.jpeg', '.gif', '.webp']);
 
@@ -207,6 +208,11 @@ const ensureChatExists = async (input: {
           };
         }),
         projectId: input.projectId || null,
+      });
+
+      // Embed chat title asynchronously
+      embeddingService.embedChat(input.id).catch((err) => {
+        console.error('[ChatAPI] Failed to embed chat:', err);
       });
     } else {
       const existingFileIds = new Set(
@@ -417,14 +423,21 @@ export const POST = async (req: Request) => {
             }) + '\n',
           ),
         );
-        extractMemories()
-          .catch((err) =>
-            console.error('[Chat] Async memory extraction failed:', err),
-          )
-          .finally(() => {
-            writer.close();
-            session.removeAllListeners();
-          });
+
+        const cleanup = () => {
+          writer.close();
+          session.removeAllListeners();
+        };
+
+        if (body.enableMemories !== false) {
+          extractMemories()
+            .catch((err) =>
+              console.error('[Chat] Async memory extraction failed:', err),
+            )
+            .finally(cleanup);
+        } else {
+          cleanup();
+        }
       } else if (event === 'error') {
         writer.write(
           encoder.encode(

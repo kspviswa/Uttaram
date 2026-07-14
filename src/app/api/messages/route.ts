@@ -1,5 +1,6 @@
 import db from '@/lib/db';
 import { messages } from '@/lib/db/schema';
+import embeddingService from '@/lib/embedding/service';
 
 export const POST = async (req: Request) => {
   try {
@@ -22,6 +23,11 @@ export const POST = async (req: Request) => {
       responseBlocks: responseBlocks || [],
       status: 'completed',
       phase: 'writing',
+    });
+
+    // Embed user query asynchronously
+    embeddingService.embedMessage(messageId).catch((err) => {
+      console.error('[MessagesAPI] Failed to embed message:', err);
     });
 
     return Response.json({ message: 'Message saved' }, { status: 201 });

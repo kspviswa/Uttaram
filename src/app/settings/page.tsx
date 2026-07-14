@@ -3,6 +3,7 @@
 import {
   ArrowLeft,
   BrainCog,
+  Database,
   ExternalLink,
   Search,
   Sliders,
@@ -17,6 +18,7 @@ import Models from '@/components/Settings/Sections/Models/Section';
 import SearchSection from '@/components/Settings/Sections/Search';
 import Select from '@/components/ui/Select';
 import Personalization from '@/components/Settings/Sections/Personalization';
+import EmbeddingsSection from '@/components/Settings/Sections/Embeddings';
 import Link from 'next/link';
 
 const sections = [
@@ -51,6 +53,14 @@ const sections = [
     icon: Search,
     component: SearchSection,
     dataAdd: 'search',
+  },
+  {
+    key: 'embeddings',
+    name: 'Embeddings',
+    description: 'Manage embeddings for semantic search and analytics.',
+    icon: Database,
+    component: EmbeddingsSection,
+    dataAdd: 'embeddings',
   },
 ];
 
@@ -106,9 +116,11 @@ export default function SettingsPage() {
                     systemInstructions: settingsData.data.systemInstructions,
                     aboutMe: settingsData.data.aboutMe,
                     enableMemories: settingsData.data.enableMemories,
+                    enableSuggestions: settingsData.data.enableSuggestions,
                   }
                 : {}),
             },
+            embeddings: {},
           },
         };
 

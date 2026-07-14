@@ -1,5 +1,5 @@
 import db from '@/lib/db';
-import { chats, messages } from '@/lib/db/schema';
+import { chats, messages, chatRelations } from '@/lib/db/schema';
 import ModelRegistry from '@/lib/models/registry';
 import { ModelWithProvider } from '@/lib/models/types';
 import { getAllSettings } from '@/lib/config/settings';
@@ -89,6 +89,21 @@ export const POST = async (req: Request) => {
       status: 'completed',
       phase: 'writing',
     });
+
+    // Create chat relation for fork
+    if (chatId) {
+      try {
+        await db.insert(chatRelations).values({
+          id: crypto.randomUUID(),
+          chatId: newChatId,
+          relatedChatId: chatId,
+          relationType: 'fork',
+          createdAt: now,
+        });
+      } catch (err) {
+        console.error('Failed to create fork relation:', err);
+      }
+    }
 
     return Response.json({ chatId: newChatId }, { status: 201 });
   } catch (err) {

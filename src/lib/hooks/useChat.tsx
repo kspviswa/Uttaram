@@ -30,6 +30,14 @@ export type Section = {
   suggestions?: string[];
 };
 
+export interface ReferenceChat {
+  id: string;
+  title: string;
+  preview: string;
+  createdAt: string;
+  projectId: string | null;
+}
+
 type ChatContext = {
   messages: Message[];
   sections: Section[];
@@ -48,6 +56,8 @@ type ChatContext = {
   chatModelProvider: ChatModelProvider;
   embeddingModelProvider: EmbeddingModelProvider;
   researchEnded: boolean;
+  referenceChat: ReferenceChat | null;
+  setReferenceChat: (chat: ReferenceChat | null) => void;
   setResearchEnded: (ended: boolean) => void;
   setOptimizationMode: (mode: string) => void;
   setSources: (sources: string[]) => void;
@@ -292,6 +302,8 @@ export const chatContext = createContext<ChatContext>({
   chatModelProvider: { key: '', providerId: '' },
   embeddingModelProvider: { key: '', providerId: '' },
   researchEnded: false,
+  referenceChat: null,
+  setReferenceChat: () => {},
   rewrite: () => {},
   setMessages: () => {},
   sendMessage: async () => {},
@@ -362,6 +374,7 @@ export const ChatProvider = ({ children }: { children: React.ReactNode }) => {
   const [isConfigReady, setIsConfigReady] = useState(false);
   const [hasError, setHasError] = useState(false);
   const [isReady, setIsReady] = useState(false);
+  const [referenceChat, setReferenceChat] = useState<ReferenceChat | null>(null);
 
   const messagesRef = useRef<Message[]>([]);
 
@@ -877,6 +890,11 @@ export const ChatProvider = ({ children }: { children: React.ReactNode }) => {
 
     setMessages((prevMessages) => [...prevMessages, newMessage]);
 
+    // Clear reference after first message is sent (reference only applies to first message)
+    if (referenceChat) {
+      setReferenceChat(null);
+    }
+
     const messageIndex = messages.findIndex((m) => m.messageId === messageId);
 
     abortControllerRef.current = new AbortController();
@@ -933,6 +951,7 @@ export const ChatProvider = ({ children }: { children: React.ReactNode }) => {
           currentDate: new Date().toISOString(),
           timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
         },
+        referenceChatId: referenceChat?.id || null,
       }),
     });
 
@@ -1011,6 +1030,8 @@ export const ChatProvider = ({ children }: { children: React.ReactNode }) => {
         setMessages,
         stop,
         processingStartTime,
+        referenceChat,
+        setReferenceChat,
       }}
     >
       {children}

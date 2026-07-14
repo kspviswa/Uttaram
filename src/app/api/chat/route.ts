@@ -7,7 +7,7 @@ import { ChatTurnMessage } from '@/lib/types';
 import { SearchSources } from '@/lib/agents/search/types';
 import db from '@/lib/db';
 import { eq } from 'drizzle-orm';
-import { chats } from '@/lib/db/schema';
+import { chats, messages, chatRelations } from '@/lib/db/schema';
 import UploadManager from '@/lib/uploads/manager';
 import { extractMemories } from '@/lib/memory/extractor';
 import { analyzeImagesWithVLM } from '@/lib/vision/analyze';
@@ -16,6 +16,7 @@ import configManager from '@/lib/config';
 import { getAllSettings } from '@/lib/config/settings';
 import ThrottledLLM from '@/lib/models/throttledLLM';
 import { globalLlmSemaphore } from '@/lib/models/throttle';
+import { withRetry } from '@/lib/utils/withRetry';
 
 const IMAGE_EXTS = new Set(['.png', '.jpg', '.jpeg', '.gif', '.webp']);
 
@@ -97,6 +98,7 @@ const bodySchema = z.object({
       timezone: z.string(),
     })
     .optional(),
+  referenceChatId: z.string().nullable().optional().default(null),
 });
 
 type Body = z.infer<typeof bodySchema>;
@@ -118,6 +120,64 @@ const safeValidateBody = (data: unknown) => {
     success: true,
     data: result.data,
   };
+};
+
+const extractTextFromBlocks = (responseBlocks: any[]): string => {
+  if (!Array.isArray(responseBlocks)) return '';
+  return responseBlocks
+    .filter((b: any) => b.type === 'text')
+    .map((b: any) => b.data)
+    .join('\n');
+};
+
+const fetchAndSummarizeReference = async (
+  referenceChatId: string,
+  userQuestion: string,
+  llm: any,
+  searchConfig: any,
+): Promise<string | null> => {
+  try {
+    const refChat = await db.query.chats.findFirst({
+      where: eq(chats.id, referenceChatId),
+    });
+    if (!refChat) return null;
+
+    const refMessages = await db.query.messages.findMany({
+      where: eq(messages.chatId, referenceChatId),
+    });
+    if (refMessages.length === 0) return null;
+
+    const conversationText = refMessages
+      .map((msg) => {
+        const assistantText = extractTextFromBlocks(msg.responseBlocks || []);
+        return `User: ${msg.query}\nAssistant: ${assistantText}`;
+      })
+      .join('\n\n');
+
+    const result = await withRetry(
+      () => llm.generateText({
+        messages: [
+          {
+            role: 'system',
+            content: `You are an expert at extracting relevant context from previous conversations. The user is now asking a new question. Summarize the key points from the referenced conversation that are relevant to the user's current question. Be concise and focused on what's useful for answering their new question. If the referenced conversation is not relevant, provide a brief note that it was referenced but may not be directly related.`,
+          },
+          {
+            role: 'user',
+            content: `## Referenced Conversation (titled: "${refChat.title}")\n\n${conversationText}\n\n---\n\n## User's New Question\n\n${userQuestion}\n\n---\n\nProvide a concise summary of the relevant context from the referenced conversation that will help answer the user's new question.`,
+          },
+        ],
+      }),
+      {
+        timeout: searchConfig.llmTimeout || 60000,
+        maxRetries: searchConfig.llmMaxRetries || 3,
+      },
+    );
+
+    return `## Context from Referenced Chat: "${refChat.title}"\n\n${(result as any).content}\n\n---\n\n`;
+  } catch (err) {
+    console.error('Error fetching/summarizing reference:', err);
+    return null;
+  }
 };
 
 const ensureChatExists = async (input: {
@@ -252,6 +312,21 @@ export const POST = async (req: Request) => {
 
     let followUpContent = message.content;
 
+    const searchConfig = configManager.getCurrentConfig().search;
+
+    // Handle @ reference context injection
+    if (body.referenceChatId && body.history.length === 0) {
+      const referenceContext = await fetchAndSummarizeReference(
+        body.referenceChatId,
+        message.content,
+        mainLlm,
+        searchConfig,
+      );
+      if (referenceContext) {
+        followUpContent = `${referenceContext}\n\n## User's Question\n\n${message.content}`;
+      }
+    }
+
     const imageFileIds = body.files.filter((fid) => isImageFile(fid));
 
     if (imageFileIds.length > 0) {
@@ -364,8 +439,6 @@ export const POST = async (req: Request) => {
       }
     });
 
-    const searchConfig = configManager.getCurrentConfig().search;
-
     agent.searchAsync(session, {
       chatHistory: history,
       followUp: followUpContent,
@@ -395,6 +468,21 @@ export const POST = async (req: Request) => {
       query: message.content,
       projectId: body.projectId,
     });
+
+    // Create chat relation if reference was used
+    if (body.referenceChatId && body.history.length === 0) {
+      try {
+        await db.insert(chatRelations).values({
+          id: crypto.randomUUID(),
+          chatId: body.message.chatId,
+          relatedChatId: body.referenceChatId,
+          relationType: 'reference',
+          createdAt: new Date().toISOString(),
+        });
+      } catch (err) {
+        console.error('Failed to create chat relation:', err);
+      }
+    }
 
     req.signal.addEventListener('abort', () => {
       disconnect();

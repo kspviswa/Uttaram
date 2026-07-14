@@ -3,6 +3,7 @@ import { useEffect, useState, Fragment, useRef } from 'react';
 import { formatTimeDifference } from '@/lib/utils';
 import DeleteChat from './DeleteChat';
 import ContextIndicator from './ContextIndicator';
+import ChatRelationIndicator from './ChatRelationIndicator';
 import {
   Popover,
   PopoverButton,
@@ -340,6 +341,7 @@ const Navbar = () => {
             <h1 className="text-center text-sm font-medium text-black/80 dark:text-white/90 truncate max-w-full">
               {title || 'New Conversation'}
             </h1>
+            {chatId && <ChatRelationIndicator chatId={chatId} />}
             {loading && processingStartTime && (
               <div className="mt-0.5">
                 <TimerDisplay startTime={processingStartTime} />

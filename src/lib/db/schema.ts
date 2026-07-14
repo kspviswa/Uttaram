@@ -76,3 +76,11 @@ export const chats = sqliteTable('chats', {
   projectId: text('projectId'),
   parentId: text('parentId'),
 });
+
+export const chatRelations = sqliteTable('chat_relations', {
+  id: text('id').primaryKey(),
+  chatId: text('chatId').notNull(),
+  relatedChatId: text('relatedChatId').notNull(),
+  relationType: text('relationType', { enum: ['fork', 'reference'] }).notNull(),
+  createdAt: text('createdAt').notNull(),
+});

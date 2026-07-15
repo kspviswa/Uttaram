@@ -19,6 +19,8 @@ const DEFAULT_SETTINGS: Record<string, any> = {
   embeddingModelKey: '',
   visionModelProviderId: '',
   visionModelKey: '',
+  analyticsLlmProviderId: '',
+  analyticsLlmKey: '',
   contextLength: '8192',
   throttleEnabled: false,
   maxParallelLlmCalls: 2,

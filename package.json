@@ -27,6 +27,7 @@
     "axios": "^1.8.3",
     "better-sqlite3": "^12.11.1",
     "clsx": "^2.1.0",
+    "d3-force": "^3.0.0",
     "d3-sankey": "^0.12.3",
     "drizzle-orm": "^0.45.2",
     "html2canvas": "^1.4.1",
@@ -64,6 +65,7 @@
   },
   "devDependencies": {
     "@types/better-sqlite3": "^7.6.12",
+    "@types/d3-force": "^3.0.10",
     "@types/jsdom": "^28.0.1",
     "@types/jspdf": "^2.0.0",
     "@types/katex": "^0.16.8",

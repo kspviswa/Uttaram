@@ -9,12 +9,13 @@ const ModelSelect = ({
   type,
 }: {
   providers: ConfigModelProvider[];
-  type: 'chat' | 'embedding' | 'vision' | 'classification';
+  type: 'chat' | 'embedding' | 'vision' | 'classification' | 'analytics';
 }) => {
   const [selectedModel, setSelectedModel] = useState<string>(() => {
     if (type === 'chat') return `${localStorage.getItem('chatModelProviderId')}/${localStorage.getItem('chatModelKey')}`;
     if (type === 'vision') return `${localStorage.getItem('visionModelProviderId')}/${localStorage.getItem('visionModelKey')}`;
     if (type === 'classification') return `${localStorage.getItem('classificationModelProviderId') || ''}/${localStorage.getItem('classificationModelKey') || ''}`;
+    if (type === 'analytics') return `${localStorage.getItem('analyticsLlmProviderId') || ''}/${localStorage.getItem('analyticsLlmKey') || ''}`;
     return `${localStorage.getItem('embeddingModelProviderId')}/${localStorage.getItem('embeddingModelKey')}`;
   });
   const [loading, setLoading] = useState(false);
@@ -38,6 +39,9 @@ const ModelSelect = ({
       } else if (type === 'classification') {
         localStorage.setItem('classificationModelProviderId', providerId);
         localStorage.setItem('classificationModelKey', modelKey);
+      } else if (type === 'analytics') {
+        localStorage.setItem('analyticsLlmProviderId', providerId);
+        localStorage.setItem('analyticsLlmKey', modelKey);
       } else {
         localStorage.setItem('embeddingModelProviderId', providerId);
         localStorage.setItem('embeddingModelKey', modelKey);
@@ -56,6 +60,8 @@ const ModelSelect = ({
           visionModelKey: type === 'vision' ? modelKey : localStorage.getItem('visionModelKey'),
           classificationModelProviderId: type === 'classification' ? providerId : localStorage.getItem('classificationModelProviderId'),
           classificationModelKey: type === 'classification' ? modelKey : localStorage.getItem('classificationModelKey'),
+          analyticsLlmProviderId: type === 'analytics' ? providerId : localStorage.getItem('analyticsLlmProviderId'),
+          analyticsLlmKey: type === 'analytics' ? modelKey : localStorage.getItem('analyticsLlmKey'),
         }),
       });
     } catch (error) {
@@ -71,7 +77,7 @@ const ModelSelect = ({
       <div className="space-y-3 lg:space-y-5">
         <div>
           <h4 className="text-sm lg:text-sm text-black dark:text-white">
-            Select {type === 'chat' ? 'Chat Model' : type === 'vision' ? 'Vision Model' : type === 'classification' ? 'Classification Model (Fast Model)' : 'Embedding Model'}
+            Select {type === 'chat' ? 'Chat Model' : type === 'vision' ? 'Vision Model' : type === 'classification' ? 'Classification Model (Fast Model)' : type === 'analytics' ? 'Analytics Model (Cluster Naming)' : 'Embedding Model'}
           </h4>
           <p className="text-[11px] lg:text-xs text-black/50 dark:text-white/50">
             {type === 'chat'
@@ -80,7 +86,9 @@ const ModelSelect = ({
                 ? 'Choose which model to use for image analysis'
                 : type === 'classification'
                   ? 'Choose a fast, lightweight model for query classification (optional; uses chat model if not set)'
-                  : 'Choose which model to use for generating embeddings'}
+                  : type === 'analytics'
+                    ? 'Choose which model to use for generating cluster names in the Curiosity Map'
+                    : 'Choose which model to use for generating embeddings'}
           </p>
         </div>
         <Select

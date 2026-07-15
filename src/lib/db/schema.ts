@@ -86,3 +86,10 @@ export const chatRelations = sqliteTable('chat_relations', {
   relationType: text('relationType', { enum: ['fork', 'reference'] }).notNull(),
   createdAt: text('createdAt').notNull(),
 });
+
+export const clusterLabels = sqliteTable('cluster_labels', {
+  id: text('id').primaryKey(),
+  clusterHash: text('cluster_hash').notNull().unique(),
+  label: text('label').notNull(),
+  createdAt: text('created_at').notNull(),
+});

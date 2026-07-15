@@ -4,6 +4,7 @@ import { useEffect, useRef, useState, useCallback } from 'react';
 import TextareaAutosize from 'react-textarea-autosize';
 import AttachSmall from './MessageInputActions/AttachSmall';
 import Optimization from './MessageInputActions/Optimization';
+import Sources from './MessageInputActions/Sources';
 import { useChat } from '@/lib/hooks/useChat';
 import ChatReferencePopover from './MessageInputActions/ChatReferencePopover';
 
@@ -138,7 +139,6 @@ const MessageInput = () => {
         )}
 
         <div className={cn('flex items-center gap-2', mode === 'multi' ? 'w-full' : '')}>
-          {mode === 'multi' && <AttachSmall />}
           <button
             type="button"
             onClick={() => setShowReferencePopover(true)}
@@ -162,6 +162,7 @@ const MessageInput = () => {
 
       {mode === 'single' && (
         <>
+          <Sources />
           <Optimization />
           <button
             disabled={!loading && message.trim().length === 0}
@@ -180,6 +181,7 @@ const MessageInput = () => {
         <div className="flex flex-row items-center justify-between w-full pt-2">
           <div className="flex flex-row items-center space-x-1">
             <AttachSmall />
+            <Sources />
             <Optimization />
           </div>
           <button

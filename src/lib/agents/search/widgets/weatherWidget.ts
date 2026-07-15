@@ -53,9 +53,8 @@ You must respond in the following JSON format without any extra text, explanatio
 `;
 
 const weatherWidget: Widget = {
-  type: 'weatherWidget',
-  shouldExecute: (classification) =>
-    classification.classification.showWeatherWidget,
+  type: 'weather',
+  shouldExecute: () => true,
   execute: async (input) => {
     const output = await withRetry(
       async () =>

@@ -29,7 +29,6 @@ export type SearchAgentConfig = {
   metadata?: ClientMetadata;
   llmTimeout?: number;
   llmMaxRetries?: number;
-  classificationLlm?: BaseLLM<any> | null;
 };
 
 export type SearchAgentInput = {
@@ -44,14 +43,13 @@ export type SearchAgentInput = {
 export type WidgetInput = {
   chatHistory: ChatTurnMessage[];
   followUp: string;
-  classification: ClassifierOutput;
   llm: BaseLLM<any>;
   userProfile?: UserProfile;
 };
 
 export type Widget = {
   type: string;
-  shouldExecute: (classification: ClassifierOutput) => boolean;
+  shouldExecute: () => boolean;
   execute: (input: WidgetInput) => Promise<WidgetOutput | void>;
 };
 
@@ -59,33 +57,6 @@ export type WidgetOutput = {
   type: string;
   llmContext: string;
   data: any;
-};
-
-export type ClassifierInput = {
-  llm: BaseLLM<any>;
-  classificationLlm?: BaseLLM<any> | null;
-  embedding?: BaseEmbedding<any>;
-  enabledSources: SearchSources[];
-  query: string;
-  chatHistory: ChatTurnMessage[];
-  enableMemories?: boolean;
-  userProfile?: UserProfile;
-  metadata?: ClientMetadata;
-  llmTimeout?: number;
-  llmMaxRetries?: number;
-};
-
-export type ClassifierOutput = {
-  classification: {
-    skipSearch: boolean;
-    personalSearch: boolean;
-    academicSearch: boolean;
-    discussionSearch: boolean;
-    showWeatherWidget: boolean;
-    showStockWidget: boolean;
-    showCalculationWidget: boolean;
-  };
-  standaloneFollowUp: string;
 };
 
 export type AdditionalConfig = {
@@ -97,7 +68,6 @@ export type AdditionalConfig = {
 export type ResearcherInput = {
   chatHistory: ChatTurnMessage[];
   followUp: string;
-  classification: ClassifierOutput;
   config: SearchAgentConfig;
   researchBlockId?: string;
 };
@@ -134,7 +104,6 @@ export interface ResearchAction<
   getToolDescription: (config: { mode: SearchAgentConfig['mode'] }) => string;
   getDescription: (config: { mode: SearchAgentConfig['mode'] }) => string;
   enabled: (config: {
-    classification: ClassifierOutput;
     fileIds: string[];
     mode: SearchAgentConfig['mode'];
     sources: SearchSources[];

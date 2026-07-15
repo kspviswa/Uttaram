@@ -19,11 +19,11 @@ const DEFAULT_SETTINGS: Record<string, any> = {
   embeddingModelKey: '',
   visionModelProviderId: '',
   visionModelKey: '',
-  classificationModelProviderId: '',
-  classificationModelKey: '',
   contextLength: '8192',
   throttleEnabled: false,
   maxParallelLlmCalls: 2,
+  similarityThreshold: 0.15,
+  knnNeighbors: 2,
 };
 
 function serialize(value: any): string {

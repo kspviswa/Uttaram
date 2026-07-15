@@ -8,6 +8,7 @@ import {
   Search,
   Sliders,
   ToggleRight,
+  BarChart3,
 } from 'lucide-react';
 import Preferences from '@/components/Settings/Sections/Preferences';
 import { useEffect, useState } from 'react';
@@ -19,6 +20,7 @@ import SearchSection from '@/components/Settings/Sections/Search';
 import Select from '@/components/ui/Select';
 import Personalization from '@/components/Settings/Sections/Personalization';
 import EmbeddingsSection from '@/components/Settings/Sections/Embeddings';
+import AnalyticsSection from '@/components/Settings/Sections/Analytics';
 import Link from 'next/link';
 
 const sections = [
@@ -61,6 +63,14 @@ const sections = [
     icon: Database,
     component: EmbeddingsSection,
     dataAdd: 'embeddings',
+  },
+  {
+    key: 'analytics',
+    name: 'Analytics',
+    description: 'Configure Curiosity Map clustering and visualization.',
+    icon: BarChart3,
+    component: AnalyticsSection,
+    dataAdd: 'analytics',
   },
 ];
 
@@ -121,6 +131,14 @@ export default function SettingsPage() {
                 : {}),
             },
             embeddings: {},
+            analytics: {
+              ...(settingsData.data
+                ? {
+                    similarityThreshold: settingsData.data.similarityThreshold,
+                    knnNeighbors: settingsData.data.knnNeighbors,
+                  }
+                : {}),
+            },
           },
         };
 

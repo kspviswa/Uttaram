@@ -3,6 +3,7 @@ import db from '@/lib/db';
 import { chats, messages, chatRelations } from '@/lib/db/schema';
 import { sql, eq, desc } from 'drizzle-orm';
 import computeSimilarity from '@/lib/utils/computeSimilarity';
+import { getAllSettings } from '@/lib/config/settings';
 
 interface GraphNode {
   id: string;
@@ -110,8 +111,18 @@ function extractTopicLabel(titles: string[]): string {
 function clusterChats(
   chatEmbeddings: { id: string; embedding: number[] }[],
   chatTitles: Map<string, string>,
-  threshold: number = 0.7,
+  edges: GraphEdge[],
 ): Cluster[] {
+  // Use connected components from edges to form clusters
+  const adjacencyMap = new Map<string, Set<string>>();
+  for (const chat of chatEmbeddings) {
+    adjacencyMap.set(chat.id, new Set());
+  }
+  for (const edge of edges) {
+    adjacencyMap.get(edge.source)?.add(edge.target);
+    adjacencyMap.get(edge.target)?.add(edge.source);
+  }
+
   const visited = new Set<string>();
   const clusters: Cluster[] = [];
   let clusterId = 0;
@@ -119,16 +130,22 @@ function clusterChats(
   for (const chat of chatEmbeddings) {
     if (visited.has(chat.id)) continue;
 
-    const cluster: string[] = [chat.id];
-    visited.add(chat.id);
+    // BFS to find connected component
+    const cluster: string[] = [];
+    const queue = [chat.id];
+    while (queue.length > 0) {
+      const current = queue.shift()!;
+      if (visited.has(current)) continue;
+      visited.add(current);
+      cluster.push(current);
 
-    for (const other of chatEmbeddings) {
-      if (visited.has(other.id)) continue;
-
-      const similarity = computeSimilarity(chat.embedding, other.embedding);
-      if (similarity >= threshold) {
-        cluster.push(other.id);
-        visited.add(other.id);
+      const neighbors = adjacencyMap.get(current);
+      if (neighbors) {
+        for (const neighbor of neighbors) {
+          if (!visited.has(neighbor)) {
+            queue.push(neighbor);
+          }
+        }
       }
     }
 
@@ -341,7 +358,7 @@ function computeMetrics(
   };
 }
 
-export async function GET() {
+export async function GET(request: Request) {
   try {
     const allChats = await db
       .select({
@@ -370,6 +387,10 @@ export async function GET() {
 
     const relations = await db.select().from(chatRelations).all();
 
+    const appSettings = await getAllSettings();
+    const similarityThreshold = Number(appSettings.similarityThreshold) || 0.15;
+    const knnNeighbors = Number(appSettings.knnNeighbors) || 2;
+
     const chatEmbeddings = allChats
       .filter((c) => c.embedding)
       .map((c) => ({
@@ -382,19 +403,6 @@ export async function GET() {
       chatTitles.set(chat.id, chat.title);
     }
 
-    const clusters = clusterChats(chatEmbeddings, chatTitles, 0.5);
-
-    const nodes: GraphNode[] = allChats.map((chat) => {
-      const cluster = clusters.find((c) => c.chatIds.includes(chat.id));
-      return {
-        id: chat.id,
-        title: chat.title,
-        cluster: cluster?.id ?? -1,
-        createdAt: chat.createdAt,
-        messageCount: messageCountMap.get(chat.id) || 0,
-      };
-    });
-
     const edges: GraphEdge[] = [];
 
     for (const relation of relations) {
@@ -406,33 +414,76 @@ export async function GET() {
       });
     }
 
+    // Compute all pairwise similarities
+    const allSimilarities: { i: number; j: number; score: number }[] = [];
     for (let i = 0; i < chatEmbeddings.length; i++) {
       for (let j = i + 1; j < chatEmbeddings.length; j++) {
         const similarity = computeSimilarity(
           chatEmbeddings[i].embedding,
           chatEmbeddings[j].embedding,
         );
+        allSimilarities.push({ i, j, score: similarity });
+      }
+    }
 
-        if (similarity >= 0.5) {
-          const existingEdge = edges.find(
-            (e) =>
-              (e.source === chatEmbeddings[i].id &&
-                e.target === chatEmbeddings[j].id) ||
-              (e.source === chatEmbeddings[j].id &&
-                e.target === chatEmbeddings[i].id),
-          );
+    // K-nearest neighbors: each chat connects to its top N most similar chats
+    const k = Math.min(knnNeighbors, chatEmbeddings.length - 1);
+    const knnEdges = new Set<string>();
 
-          if (!existingEdge) {
-            edges.push({
-              source: chatEmbeddings[i].id,
-              target: chatEmbeddings[j].id,
-              weight: similarity,
-              type: 'implicit',
-            });
-          }
+    for (let i = 0; i < chatEmbeddings.length; i++) {
+      const neighbors = allSimilarities
+        .filter((s) => s.i === i || s.j === i)
+        .sort((a, b) => b.score - a.score)
+        .slice(0, k);
+
+      for (const neighbor of neighbors) {
+        const sourceId = chatEmbeddings[neighbor.i].id;
+        const targetId = chatEmbeddings[neighbor.j].id;
+        const edgeKey = [sourceId, targetId].sort().join('|||');
+
+        if (!knnEdges.has(edgeKey)) {
+          knnEdges.add(edgeKey);
+          edges.push({
+            source: sourceId,
+            target: targetId,
+            weight: neighbor.score,
+            type: 'implicit',
+          });
         }
       }
     }
+
+    // Also add any pair exceeding the similarity threshold
+    for (const sim of allSimilarities) {
+      if (sim.score >= similarityThreshold) {
+        const sourceId = chatEmbeddings[sim.i].id;
+        const targetId = chatEmbeddings[sim.j].id;
+        const edgeKey = [sourceId, targetId].sort().join('|||');
+
+        if (!knnEdges.has(edgeKey)) {
+          knnEdges.add(edgeKey);
+          edges.push({
+            source: sourceId,
+            target: targetId,
+            weight: sim.score,
+            type: 'implicit',
+          });
+        }
+      }
+    }
+
+    const clusters = clusterChats(chatEmbeddings, chatTitles, edges);
+
+    const nodes: GraphNode[] = allChats.map((chat) => {
+      const cluster = clusters.find((c) => c.chatIds.includes(chat.id));
+      return {
+        id: chat.id,
+        title: chat.title,
+        cluster: cluster?.id ?? -1,
+        createdAt: chat.createdAt,
+        messageCount: messageCountMap.get(chat.id) || 0,
+      };
+    });
 
     const heatmap = computeHeatmap(allChats.map((c) => c.createdAt));
     const treemap = computeTreemap(nodes, clusters);

@@ -100,6 +100,7 @@ type UIConfigSections = {
   personalization: UIConfigField[];
   modelProviders: ModelProviderUISection[];
   search: UIConfigField[];
+  analytics: UIConfigField[];
 };
 
 export type {

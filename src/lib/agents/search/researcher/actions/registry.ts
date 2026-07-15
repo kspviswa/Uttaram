@@ -2,7 +2,6 @@ import { Tool, ToolCall } from '@/lib/models/types';
 import {
   ActionOutput,
   AdditionalConfig,
-  ClassifierOutput,
   ResearchAction,
   SearchAgentConfig,
   SearchSources,
@@ -20,7 +19,6 @@ class ActionRegistry {
   }
 
   static getAvailableActions(config: {
-    classification: ClassifierOutput;
     fileIds: string[];
     mode: SearchAgentConfig['mode'];
     sources: SearchSources[];
@@ -31,7 +29,6 @@ class ActionRegistry {
   }
 
   static getAvailableActionTools(config: {
-    classification: ClassifierOutput;
     fileIds: string[];
     mode: SearchAgentConfig['mode'];
     sources: SearchSources[];
@@ -46,7 +43,6 @@ class ActionRegistry {
   }
 
   static getAvailableActionsDescriptions(config: {
-    classification: ClassifierOutput;
     fileIds: string[];
     mode: SearchAgentConfig['mode'];
     sources: SearchSources[];

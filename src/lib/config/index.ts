@@ -165,6 +165,30 @@ class ConfigManager {
         env: 'SEARXNG_API_URL',
       },
     ],
+    analytics: [
+      {
+        name: 'Similarity Threshold',
+        key: 'similarityThreshold',
+        type: 'number',
+        placeholder: '0.15',
+        default: 0.15,
+        required: false,
+        description:
+          'Minimum cosine similarity score (0-1) for two chats to be considered related. Lower = more connections, higher = stricter matching. Local embeddings typically produce scores 0.1-0.3.',
+        scope: 'server',
+      },
+      {
+        name: 'KNN Neighbors',
+        key: 'knnNeighbors',
+        type: 'number',
+        placeholder: '2',
+        default: 2,
+        required: false,
+        description:
+          'Number of nearest neighbors each chat connects to via embedding similarity. Each chat will connect to this many most-similar chats regardless of threshold.',
+        scope: 'server',
+      },
+    ],
   };
 
   constructor() {

@@ -1,6 +1,5 @@
 import { ResearcherOutput, SearchAgentInput } from './types';
 import SessionManager from '@/lib/session';
-import { classify } from './classifier';
 import Researcher from './researcher';
 import { getWriterPrompt } from '@/lib/prompts/search/writer';
 import { WidgetExecutor } from './widgets';
@@ -107,38 +106,7 @@ class SearchAgent {
     session.emitBlock(researchBlock);
     const retryHandler = createRetryStatusHandler(session, researchBlock.id);
 
-    let classification;
-    try {
-      classification = await classify({
-        chatHistory: input.chatHistory,
-        enabledSources: input.config.sources,
-        query: input.followUp,
-        llm: input.config.llm,
-        classificationLlm: input.config.classificationLlm,
-        embedding: input.config.embedding,
-        enableMemories: input.config.enableMemories,
-        userProfile: input.config.userProfile,
-        metadata: input.config.metadata,
-        llmTimeout: input.config.llmTimeout,
-        llmMaxRetries: input.config.llmMaxRetries,
-      });
-    } catch (err) {
-      console.error('Classifier failed, using defaults:', err);
-      classification = {
-        classification: {
-          skipSearch: true,
-          personalSearch: false,
-          academicSearch: false,
-          discussionSearch: false,
-          showWeatherWidget: false,
-          showStockWidget: false,
-          showCalculationWidget: false,
-        },
-        standaloneFollowUp: input.followUp,
-      };
-    }
-
-    const searchAttempted = !classification.classification.skipSearch;
+    const searchAttempted = input.config.sources.length > 0;
     session.emit('data', { type: 'searchPerformed', searchPerformed: searchAttempted });
     session.emit('data', { type: 'phase', phase: 'researching' });
     await this.syncBlocksToDb(
@@ -149,7 +117,6 @@ class SearchAgent {
     );
 
     const widgetPromise = WidgetExecutor.executeAll({
-      classification,
       chatHistory: input.chatHistory,
       followUp: input.followUp,
       llm: input.config.llm,
@@ -170,13 +137,12 @@ class SearchAgent {
 
     let searchPromise: Promise<ResearcherOutput | null> | null = null;
 
-    if (!classification.classification.skipSearch) {
+    if (searchAttempted) {
       const researcher = new Researcher();
       searchPromise = researcher
         .research(session, {
           chatHistory: input.chatHistory,
           followUp: input.followUp,
-          classification: classification,
           config: input.config,
           researchBlockId: researchBlock.id,
         })

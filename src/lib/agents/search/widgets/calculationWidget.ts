@@ -35,8 +35,7 @@ You must respond in the following JSON format without any extra text, explanatio
 
 const calculationWidget: Widget = {
   type: 'calculationWidget',
-  shouldExecute: (classification) =>
-    classification.classification.showCalculationWidget,
+  shouldExecute: () => true,
   execute: async (input) => {
     const output = await withRetry(
       async () =>

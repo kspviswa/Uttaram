@@ -17,7 +17,7 @@ class WidgetExecutor {
     await Promise.all(
       Array.from(this.widgets.values()).map(async (widget) => {
         try {
-          if (widget.shouldExecute(input.classification)) {
+          if (widget.shouldExecute()) {
             const output = await widget.execute(input);
             if (output) {
               results.push(output);

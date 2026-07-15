@@ -224,12 +224,6 @@ const Models = ({
           )}
           type="embedding"
         />
-        <ModelSelect
-          providers={values.filter((p) =>
-            p.chatModels.some((m) => m.key != 'error'),
-          )}
-          type="classification"
-        />
         <ContextLengthSelect />
       </div>
       <div className="border-t border-light-200 dark:border-dark-200" />

@@ -22,7 +22,6 @@ class Researcher {
           : 25;
 
     const availableTools = ActionRegistry.getAvailableActionTools({
-      classification: input.classification,
       fileIds: input.config.fileIds,
       mode: input.config.mode,
       sources: input.config.sources,
@@ -30,7 +29,6 @@ class Researcher {
 
     const availableActionsDescription =
       ActionRegistry.getAvailableActionsDescriptions({
-        classification: input.classification,
         fileIds: input.config.fileIds,
         mode: input.config.mode,
         sources: input.config.sources,
@@ -56,7 +54,7 @@ class Researcher {
         content: `
           <conversation>
           ${formatChatHistoryAsString(input.chatHistory.slice(-10))}
-           User: ${input.followUp} (Standalone question: ${input.classification.standaloneFollowUp})
+           User: ${input.followUp}
            </conversation>
         `,
       },

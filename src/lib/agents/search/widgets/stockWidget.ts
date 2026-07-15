@@ -51,8 +51,7 @@ You must respond in the following JSON format without any extra text, explanatio
 
 const stockWidget: Widget = {
   type: 'stockWidget',
-  shouldExecute: (classification) =>
-    classification.classification.showStockWidget,
+  shouldExecute: () => true,
   execute: async (input) => {
     const output = await withRetry(
       async () =>

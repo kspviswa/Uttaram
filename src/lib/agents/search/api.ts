@@ -1,6 +1,5 @@
 import { ResearcherOutput, SearchAgentInput } from './types';
 import SessionManager from '@/lib/session';
-import { classify } from './classifier';
 import Researcher from './researcher';
 import { getWriterPrompt } from '@/lib/prompts/search/writer';
 import { WidgetExecutor } from './widgets';
@@ -8,38 +7,10 @@ import { withRetryStream } from '@/lib/utils/withRetry';
 
 class APISearchAgent {
   async searchAsync(session: SessionManager, input: SearchAgentInput) {
-    let classification;
-    try {
-      classification = await classify({
-        chatHistory: input.chatHistory,
-        enabledSources: input.config.sources,
-        query: input.followUp,
-        llm: input.config.llm,
-        userProfile: input.config.userProfile,
-        llmTimeout: input.config.llmTimeout,
-        llmMaxRetries: input.config.llmMaxRetries,
-      });
-    } catch (err) {
-      console.error('Classifier failed, using defaults:', err);
-      classification = {
-        classification: {
-          skipSearch: true,
-          personalSearch: false,
-          academicSearch: false,
-          discussionSearch: false,
-          showWeatherWidget: false,
-          showStockWidget: false,
-          showCalculationWidget: false,
-        },
-        standaloneFollowUp: input.followUp,
-      };
-    }
-
-    const searchAttempted = !classification.classification.skipSearch;
+    const searchAttempted = input.config.sources.length > 0;
     session.emit('data', { type: 'searchPerformed', searchPerformed: searchAttempted });
 
     const widgetPromise = WidgetExecutor.executeAll({
-      classification,
       chatHistory: input.chatHistory,
       followUp: input.followUp,
       llm: input.config.llm,
@@ -50,12 +21,11 @@ class APISearchAgent {
 
     let searchPromise: Promise<ResearcherOutput> | null = null;
 
-    if (!classification.classification.skipSearch) {
+    if (searchAttempted) {
       const researcher = new Researcher();
       searchPromise = researcher.research(SessionManager.createSession(), {
         chatHistory: input.chatHistory,
         followUp: input.followUp,
-        classification: classification,
         config: input.config,
       });
     }

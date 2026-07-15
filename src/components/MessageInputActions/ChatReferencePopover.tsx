@@ -133,7 +133,7 @@ const ChatReferencePopover = ({
           animate={{ opacity: 1, y: 0 }}
           exit={{ opacity: 0, y: 8 }}
           transition={{ duration: 0.15, ease: 'easeOut' }}
-          className="absolute z-50 w-[340px] bg-light-primary dark:bg-dark-primary border border-light-200 dark:border-dark-200 rounded-xl shadow-lg overflow-hidden"
+          className="absolute z-50 w-[calc(100vw-32px)] max-w-[340px] bg-light-primary dark:bg-dark-primary border border-light-200 dark:border-dark-200 rounded-xl shadow-lg overflow-hidden"
           style={position ? { top: position.top, left: position.left } : { bottom: '100%', left: 0, marginBottom: 8 }}
         >
           <div className="p-2 border-b border-light-200 dark:border-dark-200">

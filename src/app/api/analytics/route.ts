@@ -196,9 +196,12 @@ function clusterChats(
   chatEmbeddings: { id: string; embedding: number[] }[],
   chatTitles: Map<string, string>,
   edges: GraphEdge[],
+  similarityThreshold: number = 0.15,
 ): Cluster[] {
-  // Use agglomerative clustering instead of connected components
-  const clusters = agglomerativeClustering(chatEmbeddings, 0.7);
+  // Convert similarity threshold to distance threshold (1 - similarity)
+  // For MiniLM embeddings, similarities are low (0.1-0.3), so use 1 - similarityThreshold
+  const distanceThreshold = 1 - similarityThreshold;
+  const clusters = agglomerativeClustering(chatEmbeddings, distanceThreshold);
 
   // Generate labels for each cluster
   for (const cluster of clusters) {
@@ -621,7 +624,7 @@ export async function GET(request: Request) {
       }
     }
 
-    const clusters = clusterChats(chatEmbeddings, chatTitles, edges);
+    const clusters = clusterChats(chatEmbeddings, chatTitles, edges, similarityThreshold);
 
     // Get labels with LLM caching (reuse appSettings from above)
     const labelMap = await getClusterLabels(clusters, chatTitles, appSettings);

@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getAllSettings, updateSettings } from '@/lib/config/settings';
+import embeddingService from '@/lib/embedding/service';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -17,7 +18,16 @@ export async function GET() {
 export async function PUT(req: NextRequest) {
   try {
     const body = await req.json();
+    const previous = await getAllSettings();
     const data = await updateSettings(body);
+
+    if (
+      previous.embeddingModelProviderId !== data.embeddingModelProviderId ||
+      previous.embeddingModelKey !== data.embeddingModelKey
+    ) {
+      embeddingService.reset();
+    }
+
     return NextResponse.json({ data });
   } catch (err) {
     console.error('[Settings] Failed to update settings:', err);

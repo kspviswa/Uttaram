@@ -73,17 +73,56 @@ export async function extractMemories(): Promise<{
   const llm = await registry.loadChatModel(chatProviderId, chatModelKey);
 
   let embeddingModel = null;
-  for (const p of registry.activeProviders) {
-    try {
-      const models = await p.provider.getModelList();
-      if (models.embedding.length > 0) {
-        embeddingModel = await registry.loadEmbeddingModel(p.id, models.embedding[0].key);
-        memoryStore.setEmbeddingModel(embeddingModel);
-        console.log(`[Memory] Using embedding model: ${p.name} / ${models.embedding[0].key}`);
-        break;
+  const desiredProviderId = settings.embeddingModelProviderId;
+  const desiredModelKey = settings.embeddingModelKey;
+
+  if (desiredProviderId && desiredModelKey) {
+    const preferred = registry.activeProviders.find(
+      (p) => p.id === desiredProviderId,
+    );
+    if (preferred) {
+      try {
+        const models = await preferred.provider.getModelList();
+        if (models.embedding.some((m) => m.key === desiredModelKey)) {
+          embeddingModel = await registry.loadEmbeddingModel(
+            preferred.id,
+            desiredModelKey,
+          );
+          memoryStore.setEmbeddingModel(embeddingModel);
+          console.log(
+            `[Memory] Using embedding model: ${preferred.name} / ${desiredModelKey} (from settings)`,
+          );
+        } else {
+          console.warn(
+            `[Memory] Saved embedding model ${desiredProviderId}/${desiredModelKey} not found in provider ${preferred.name}, falling back`,
+          );
+        }
+      } catch (err) {
+        console.warn(
+          `[Memory] Saved provider ${preferred.name} has no usable embedding model:`,
+          err,
+        );
       }
-    } catch (err) {
-      console.warn(`[Memory] Provider ${p.name} has no usable embedding model:`, err);
+    } else {
+      console.warn(
+        `[Memory] Saved embedding provider ${desiredProviderId} not found, falling back`,
+      );
+    }
+  }
+
+  if (!embeddingModel) {
+    for (const p of registry.activeProviders) {
+      try {
+        const models = await p.provider.getModelList();
+        if (models.embedding.length > 0) {
+          embeddingModel = await registry.loadEmbeddingModel(p.id, models.embedding[0].key);
+          memoryStore.setEmbeddingModel(embeddingModel);
+          console.log(`[Memory] Using embedding model: ${p.name} / ${models.embedding[0].key} (fallback)`);
+          break;
+        }
+      } catch (err) {
+        console.warn(`[Memory] Provider ${p.name} has no usable embedding model:`, err);
+      }
     }
   }
 

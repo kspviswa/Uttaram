@@ -7,6 +7,7 @@ import { getAllSettings } from '@/lib/config/settings';
 class EmbeddingService {
   private static instance: EmbeddingService | null = null;
   private embeddingModel: any = null;
+  private embeddingModelKey: string | null = null;
 
   private constructor() {}
 
@@ -17,15 +18,65 @@ class EmbeddingService {
     return EmbeddingService.instance;
   }
 
-  async getEmbeddingModel() {
-    if (this.embeddingModel) return this.embeddingModel;
+  reset() {
+    this.embeddingModel = null;
+    this.embeddingModelKey = null;
+  }
 
+  async getEmbeddingModel() {
     const settings = await getAllSettings();
+    const desiredProviderId = settings.embeddingModelProviderId;
+    const desiredModelKey = settings.embeddingModelKey;
+
+    if (
+      this.embeddingModel &&
+      this.embeddingModelKey === `${desiredProviderId}/${desiredModelKey}`
+    ) {
+      return this.embeddingModel;
+    }
+
+    this.embeddingModel = null;
+    this.embeddingModelKey = null;
+
     const registry = new ModelRegistry();
 
     if (registry.activeProviders.length === 0) {
       console.warn('[EmbeddingService] No active providers found');
       return null;
+    }
+
+    if (desiredProviderId && desiredModelKey) {
+      const preferred = registry.activeProviders.find(
+        (p) => p.id === desiredProviderId,
+      );
+      if (preferred) {
+        try {
+          const models = await preferred.provider.getModelList();
+          if (models.embedding.some((m) => m.key === desiredModelKey)) {
+            this.embeddingModel = await registry.loadEmbeddingModel(
+              preferred.id,
+              desiredModelKey,
+            );
+            this.embeddingModelKey = `${preferred.id}/${desiredModelKey}`;
+            console.log(
+              `[EmbeddingService] Using embedding model: ${preferred.name} / ${desiredModelKey} (from settings)`,
+            );
+            return this.embeddingModel;
+          }
+          console.warn(
+            `[EmbeddingService] Saved embedding model ${desiredProviderId}/${desiredModelKey} not found in provider ${preferred.name}, falling back`,
+          );
+        } catch (err) {
+          console.warn(
+            `[EmbeddingService] Saved provider ${preferred.name} has no usable embedding model:`,
+            err,
+          );
+        }
+      } else {
+        console.warn(
+          `[EmbeddingService] Saved embedding provider ${desiredProviderId} not found, falling back`,
+        );
+      }
     }
 
     for (const p of registry.activeProviders) {
@@ -36,8 +87,9 @@ class EmbeddingService {
             p.id,
             models.embedding[0].key,
           );
+          this.embeddingModelKey = `${p.id}/${models.embedding[0].key}`;
           console.log(
-            `[EmbeddingService] Using embedding model: ${p.name} / ${models.embedding[0].key}`,
+            `[EmbeddingService] Using embedding model: ${p.name} / ${models.embedding[0].key} (fallback)`,
           );
           return this.embeddingModel;
         }

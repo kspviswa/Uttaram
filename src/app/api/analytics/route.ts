@@ -74,6 +74,13 @@ interface AnalyticsResponse {
   sankey: SankeyData;
   radar: RadarData[];
   metrics: AnalyticsMetrics;
+  mixedEmbeddingInfo: {
+    hasMixed: boolean;
+    dimensions: Record<number, number>;
+    totalChats: number;
+    embeddedChats: number;
+    excludedChats: number;
+  };
 }
 
 function extractTopicLabel(titles: string[]): string {
@@ -543,12 +550,39 @@ export async function GET(request: Request) {
     const similarityThreshold = Number(appSettings.similarityThreshold) || 0.15;
     const knnNeighbors = Number(appSettings.knnNeighbors) || 2;
 
-    const chatEmbeddings = allChats
+    const allParsed = allChats
       .filter((c) => c.embedding)
       .map((c) => ({
         id: c.id,
         embedding: JSON.parse(c.embedding!),
       }));
+
+    // Group by dimension and use only the most common one to avoid
+    // "Vectors must be of the same length" errors from mixed embedding models
+    const dimCounts = new Map<number, number>();
+    for (const e of allParsed) {
+      const dim = e.embedding.length;
+      dimCounts.set(dim, (dimCounts.get(dim) || 0) + 1);
+    }
+    let dominantDim = 0;
+    let maxCount = 0;
+    for (const [dim, count] of dimCounts) {
+      if (count > maxCount) {
+        maxCount = count;
+        dominantDim = dim;
+      }
+    }
+    const chatEmbeddings = dominantDim > 0
+      ? allParsed.filter((e) => e.embedding.length === dominantDim)
+      : allParsed;
+
+    const mixedEmbeddingInfo = {
+      hasMixed: dimCounts.size > 1,
+      dimensions: Object.fromEntries(dimCounts),
+      totalChats: allChats.length,
+      embeddedChats: allParsed.length,
+      excludedChats: allParsed.length - chatEmbeddings.length,
+    };
 
     const chatTitles = new Map<string, string>();
     for (const chat of allChats) {
@@ -663,6 +697,7 @@ export async function GET(request: Request) {
       sankey,
       radar,
       metrics,
+      mixedEmbeddingInfo,
     };
 
     return NextResponse.json({ success: true, data: response });

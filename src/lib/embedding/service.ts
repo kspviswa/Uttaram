@@ -249,6 +249,106 @@ class EmbeddingService {
       messages: { embedded: messageResult.embedded, errors: messageResult.errors },
     };
   }
+
+  async reEmbedChats(
+    onProgress?: (done: number, total: number) => void,
+  ): Promise<{ embedded: number; errors: number }> {
+    const model = await this.getEmbeddingModel();
+    if (!model) {
+      console.warn('[EmbeddingService] No embedding model available for re-embed');
+      return { embedded: 0, errors: 0 };
+    }
+
+    // Clear all existing chat embeddings
+    await db.update(chats).set({ embedding: null });
+
+    // Fetch all chats (now all have NULL embeddings)
+    const allChats = await db.select().from(chats).all();
+
+    let embedded = 0;
+    let errors = 0;
+
+    for (let i = 0; i < allChats.length; i++) {
+      const chat = allChats[i];
+      try {
+        const [embedding] = await model.embedText([chat.title]);
+        await db
+          .update(chats)
+          .set({ embedding: JSON.stringify(embedding) })
+          .where(eq(chats.id, chat.id));
+        embedded++;
+      } catch (err) {
+        console.error(`[EmbeddingService] Failed to re-embed chat ${chat.id}:`, err);
+        errors++;
+      }
+      onProgress?.(i + 1, allChats.length);
+    }
+
+    return { embedded, errors };
+  }
+
+  async reEmbedMessages(
+    onProgress?: (done: number, total: number) => void,
+  ): Promise<{ embedded: number; errors: number }> {
+    const model = await this.getEmbeddingModel();
+    if (!model) {
+      console.warn('[EmbeddingService] No embedding model available for re-embed');
+      return { embedded: 0, errors: 0 };
+    }
+
+    // Clear all existing message embeddings
+    await db.update(messages).set({ embedding: null });
+
+    // Fetch all messages with non-empty query
+    const allMessages = await db
+      .select()
+      .from(messages)
+      .where(and(sql`${messages.query} IS NOT NULL`, sql`${messages.query} != ''`))
+      .all();
+
+    let embedded = 0;
+    let errors = 0;
+
+    for (let i = 0; i < allMessages.length; i++) {
+      const message = allMessages[i];
+      try {
+        const [embedding] = await model.embedText([message.query]);
+        await db
+          .update(messages)
+          .set({ embedding: JSON.stringify(embedding) })
+          .where(eq(messages.messageId, message.messageId));
+        embedded++;
+      } catch (err) {
+        console.error(
+          `[EmbeddingService] Failed to re-embed message ${message.messageId}:`,
+          err,
+        );
+        errors++;
+      }
+      onProgress?.(i + 1, allMessages.length);
+    }
+
+    return { embedded, errors };
+  }
+
+  async reEmbedAll(
+    onProgress?: (phase: 'chats' | 'messages', done: number, total: number) => void,
+  ): Promise<{
+    chats: { embedded: number; errors: number };
+    messages: { embedded: number; errors: number };
+  }> {
+    const chatResult = await this.reEmbedChats((done, total) =>
+      onProgress?.('chats', done, total),
+    );
+    const messageResult = await this.reEmbedMessages((done, total) =>
+      onProgress?.('messages', done, total),
+    );
+
+    return {
+      chats: { embedded: chatResult.embedded, errors: chatResult.errors },
+      messages: { embedded: messageResult.embedded, errors: messageResult.errors },
+    };
+  }
 }
 
 const embeddingService = EmbeddingService.getInstance();

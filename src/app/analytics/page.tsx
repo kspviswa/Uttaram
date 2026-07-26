@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useCallback } from 'react';
 import {
   ResponsiveContainer,
   BarChart,
@@ -12,7 +12,7 @@ import {
 } from 'recharts';
 import Loader from '@/components/ui/Loader';
 import { toast } from 'sonner';
-import { Brain, Network, BarChart3, Clock, Lightbulb, Sparkles } from 'lucide-react';
+import { Brain, Network, BarChart3, Clock, Lightbulb, Sparkles, AlertTriangle, RefreshCw } from 'lucide-react';
 import KnowledgeGraph from '@/components/KnowledgeGraph';
 
 interface GraphNode {
@@ -57,6 +57,13 @@ interface AnalyticsData {
   heatmap: { day: number; hour: number; count: number }[][];
   radar: { dimension: string; value: number }[];
   metrics: AnalyticsMetrics;
+  mixedEmbeddingInfo: {
+    hasMixed: boolean;
+    dimensions: Record<number, number>;
+    totalChats: number;
+    embeddedChats: number;
+    excludedChats: number;
+  };
 }
 
 interface CuriosityProfile {
@@ -135,6 +142,124 @@ function CuriosityProfileCard({ data }: { data: AnalyticsData }) {
                 {profile.topInterests.join(' • ')}
               </span>
             </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+interface MixedEmbeddingBannerProps {
+  info: AnalyticsData['mixedEmbeddingInfo'];
+  onReEmbedComplete: () => void;
+}
+
+function MixedEmbeddingBanner({ info, onReEmbedComplete }: MixedEmbeddingBannerProps) {
+  const [isReEmbedding, setIsReEmbedding] = useState(false);
+  const [phase, setPhase] = useState<'chats' | 'messages'>('chats');
+  const [done, setDone] = useState(0);
+  const [total, setTotal] = useState(0);
+  const [result, setResult] = useState<{ chats: { embedded: number; errors: number }; messages: { embedded: number; errors: number } } | null>(null);
+
+  const handleReEmbed = useCallback(async () => {
+    setIsReEmbedding(true);
+    setDone(0);
+    setTotal(0);
+    setResult(null);
+
+    try {
+      const res = await fetch('/api/embeddings/reembed', { method: 'POST' });
+      const reader = res.body?.getReader();
+      if (!reader) throw new Error('No response body');
+
+      const decoder = new TextDecoder();
+      let buffer = '';
+
+      while (true) {
+        const { done: doneReading, value } = await reader.read();
+        if (doneReading) break;
+
+        buffer += decoder.decode(value, { stream: true });
+        const lines = buffer.split('\n');
+        buffer = lines.pop() || '';
+
+        for (const line of lines) {
+          if (line.startsWith('event: ')) {
+            const eventType = line.slice(7).trim();
+            const dataLine = lines[lines.indexOf(line) + 1];
+            if (dataLine?.startsWith('data: ')) {
+              const data = JSON.parse(dataLine.slice(6));
+              if (eventType === 'progress') {
+                setPhase(data.phase);
+                setDone(data.done);
+                setTotal(data.total);
+              } else if (eventType === 'complete') {
+                setResult(data);
+                onReEmbedComplete();
+              } else if (eventType === 'error') {
+                toast.error(data.message || 'Re-embedding failed');
+              }
+            }
+          }
+        }
+      }
+    } catch {
+      toast.error('Failed to start re-embedding');
+    } finally {
+      setIsReEmbedding(false);
+    }
+  }, [onReEmbedComplete]);
+
+  const dimensions = Object.entries(info.dimensions)
+    .map(([dim, count]) => `${count}× ${dim}d`)
+    .join(', ');
+
+  const progress = total > 0 ? (done / total) * 100 : 0;
+
+  return (
+    <div className="rounded-xl border border-amber-200 dark:border-amber-800 bg-amber-50/50 dark:bg-amber-950/20 p-4">
+      <div className="flex items-start gap-3">
+        <div className="p-2 rounded-lg bg-amber-100 dark:bg-amber-900/30 shrink-0">
+          <AlertTriangle className="w-5 h-5 text-amber-600 dark:text-amber-400" />
+        </div>
+        <div className="flex-1 min-w-0">
+          <h3 className="text-sm font-semibold text-amber-800 dark:text-amber-200">
+            Incomplete Analytics
+          </h3>
+          <p className="text-xs text-amber-700 dark:text-amber-300 mt-1">
+            {info.excludedChats} chat{info.excludedChats !== 1 ? 's' : ''} excluded due to mixed embedding dimensions ({dimensions}).
+            Re-embed all chats with your current model for a complete picture.
+          </p>
+
+          {isReEmbedding && (
+            <div className="mt-3">
+              <div className="flex justify-between text-xs text-amber-600 dark:text-amber-400 mb-1">
+                <span>{phase === 'chats' ? 'Re-embedding chats...' : 'Re-embedding messages...'}</span>
+                <span>{done}/{total}</span>
+              </div>
+              <div className="h-2 bg-amber-200 dark:bg-amber-800 rounded-full overflow-hidden">
+                <div
+                  className="h-full bg-amber-500 dark:bg-amber-400 rounded-full transition-all duration-300"
+                  style={{ width: `${progress}%` }}
+                />
+              </div>
+            </div>
+          )}
+
+          {result && (
+            <p className="text-xs text-green-700 dark:text-green-300 mt-2">
+              Done! Embedded {result.chats.embedded} chats and {result.messages.embedded} messages.
+            </p>
+          )}
+
+          {!isReEmbedding && (
+            <button
+              onClick={handleReEmbed}
+              className="mt-3 flex items-center gap-2 px-3 py-1.5 rounded-lg bg-amber-100 dark:bg-amber-900/30 hover:bg-amber-200 dark:hover:bg-amber-900/50 transition-colors text-xs font-medium text-amber-800 dark:text-amber-200"
+            >
+              <RefreshCw className="w-3.5 h-3.5" />
+              Re-embed All Chats
+            </button>
           )}
         </div>
       </div>
@@ -405,7 +530,8 @@ export default function AnalyticsPage() {
   const [data, setData] = useState<AnalyticsData | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
-  useEffect(() => {
+  const fetchData = useCallback(() => {
+    setIsLoading(true);
     fetch('/api/analytics')
       .then(r => r.json())
       .then(result => {
@@ -415,6 +541,10 @@ export default function AnalyticsPage() {
       .catch(() => toast.error('Failed to fetch analytics'))
       .finally(() => setIsLoading(false));
   }, []);
+
+  useEffect(() => {
+    fetchData();
+  }, [fetchData]);
 
   if (isLoading) {
     return (
@@ -440,6 +570,10 @@ export default function AnalyticsPage() {
           Your learning patterns, topic connections, and usage habits
         </p>
       </div>
+
+      {data.mixedEmbeddingInfo.hasMixed && (
+        <MixedEmbeddingBanner info={data.mixedEmbeddingInfo} onReEmbedComplete={fetchData} />
+      )}
 
       <CuriosityProfileCard data={data} />
 

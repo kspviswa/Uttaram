@@ -121,13 +121,13 @@ const Sidebar = ({ children }: { children: React.ReactNode }) => {
         </div>
       </div>
 
-      <div className="safe-bottom fixed bottom-0 w-full z-50 flex flex-row items-center gap-x-6 bg-light-secondary dark:bg-dark-secondary px-4 py-4 shadow-sm lg:hidden">
+      <div className="safe-bottom fixed bottom-0 w-full z-50 flex flex-row items-stretch overflow-x-auto scrollbar-none bg-light-secondary dark:bg-dark-secondary px-4 py-4 shadow-sm lg:hidden">
         {navLinks.map((link, i) => (
           <Link
             href={link.href}
             key={i}
             className={cn(
-              'relative flex flex-col items-center space-y-1 text-center w-full',
+              'relative flex flex-col items-center space-y-1 text-center shrink-0 min-w-0 px-2',
               link.active
                 ? 'text-black dark:text-white'
                 : 'text-black dark:text-white/70',

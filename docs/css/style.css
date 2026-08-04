@@ -776,12 +776,171 @@ pre {
 .install-card:nth-child(6),
 .api-card:nth-child(6) { animation-delay: 0.25s; }
 
-/* Reduced motion */
-@media (prefers-reduced-motion: reduce) {
-  *,
-  *::before,
-  *::after {
-    animation-duration: 0.01ms !important;
-    transition-duration: 0.01ms !important;
-  }
+/* Fork Me Banner */
+.fork-me {
+  position: fixed;
+  top: 0;
+  right: 0;
+  z-index: 200;
+  background: #24a0ed;
+  color: #fff;
+  padding: 0.35rem 0.75rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-decoration: none;
+  border-radius: 0 0 var(--radius-sm) 0;
+  transition: background var(--transition-fast), transform var(--transition-fast);
+  box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+}
+
+.fork-me:hover {
+  background: var(--accent-hover);
+  transform: scale(1.05);
+  color: #fff;
+}
+
+[data-theme="light"] .fork-me {
+  background: #0969da;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.12);
+}
+
+[data-theme="light"] .fork-me:hover {
+  background: #0550ae;
+}
+
+/* Hero Badges */
+.hero-badges {
+  display: flex;
+  gap: 0.5rem;
+  justify-content: center;
+  flex-wrap: wrap;
+  margin-bottom: 1rem;
+}
+
+.hero-badge-secondary {
+  display: inline-block;
+  padding: 0.2rem 0.6rem;
+  background: var(--bg-tertiary);
+  color: var(--text-secondary);
+  border: 1px solid var(--border-color);
+  border-radius: 999px;
+  font-size: 0.75rem;
+  font-weight: 500;
+}
+
+/* Commit Tree */
+.commit-tree {
+  position: relative;
+  padding-left: 2rem;
+  max-width: 700px;
+}
+
+.commit-tree::before {
+  content: '';
+  position: absolute;
+  left: 0.5rem;
+  top: 0;
+  bottom: 0;
+  width: 2px;
+  background: var(--border-color);
+}
+
+.commit-node {
+  position: relative;
+  padding-bottom: 1.25rem;
+}
+
+.commit-node:last-child {
+  padding-bottom: 0;
+}
+
+.commit-dot {
+  position: absolute;
+  left: -1.5rem;
+  top: 0.35rem;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: var(--accent);
+  border: 2px solid var(--bg-primary);
+  z-index: 1;
+}
+
+.commit-line {
+  position: absolute;
+  left: -1.45rem;
+  top: 0.5rem;
+  width: 2px;
+  height: calc(100% - 0.5rem);
+  background: var(--border-color);
+}
+
+.commit-node:last-child .commit-line {
+  display: none;
+}
+
+.commit-content {
+  display: flex;
+  align-items: baseline;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+
+.commit-hash {
+  font-family: var(--font-mono);
+  font-size: 0.8rem;
+  color: var(--accent);
+  background: var(--accent-dim);
+  padding: 0.1rem 0.4rem;
+  border-radius: var(--radius-sm);
+  flex-shrink: 0;
+}
+
+.commit-msg {
+  color: var(--text-secondary);
+  font-size: 0.9rem;
+}
+
+.commit-note {
+  margin-top: 1.5rem;
+  font-size: 0.85rem;
+  color: var(--text-muted);
+}
+
+/* About Section */
+.about-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 1.25rem;
+}
+
+.about-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-lg);
+  padding: 1.5rem;
+  transition: border-color var(--transition-fast), box-shadow var(--transition-fast);
+}
+
+.about-card:hover {
+  border-color: var(--accent);
+  box-shadow: var(--shadow-sm);
+}
+
+.about-title {
+  font-size: 1rem;
+  font-weight: 600;
+  margin-bottom: 0.5rem;
+  color: var(--text-primary);
+}
+
+.about-desc {
+  font-size: 0.9rem;
+  color: var(--text-secondary);
+  line-height: 1.6;
+}
+
+.about-desc a {
+  color: var(--accent);
+  font-weight: 500;
 }

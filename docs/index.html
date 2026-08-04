@@ -40,11 +40,17 @@
     <a href="#changelog">Changelog</a>
   </nav>
 
+  <a href="https://github.com/kspviswa/Uttaram" class="fork-me" target="_blank" rel="noopener noreferrer">Fork me on GitHub</a>
+
   <main id="main">
     <!-- Hero Section -->
     <section class="hero" id="hero">
       <div class="hero-inner">
         <div class="hero-badge">Privacy-First AI Engine</div>
+        <div class="hero-badges">
+          <span class="hero-badge-secondary">Open Source</span>
+          <span class="hero-badge-secondary">MIT License</span>
+        </div>
         <h1 class="hero-title">ऊttaram</h1>
         <p class="hero-subtitle">Direct Your Curiosity. Personalize it Privately.</p>
         <p class="hero-tagline">Curiosity should be personal.</p>
@@ -220,44 +226,112 @@ npm start</code></pre>
     <section class="section section-alt" id="changelog">
       <div class="section-inner">
         <h2 class="section-title">Recent Changes</h2>
+        <p class="section-lead">A living project shaped by community contributions and continuous iteration.</p>
 
-        <div class="changelog-group">
-          <h3 class="changelog-group-title">Embedding & Search</h3>
-          <ul class="changelog-list">
-            <li><strong>Embedding context length slider</strong> — Separate control for embedding model context window (up to 8K). Long texts are automatically chunked with 10% overlap and averaged into a single embedding.</li>
-            <li><strong>Re-embed with progress</strong> — Backfill or re-generate embeddings with a progress bar.</li>
-            <li><strong>MCP server</strong> — Search and crawl capabilities exposed via <code>/api/mcp</code> for tool integration.</li>
-            <li><strong>Search performance indicator</strong> — Visual indicator showing whether results came from live web search or cached knowledge.</li>
-          </ul>
+        <div class="commit-tree">
+          <div class="commit-node">
+            <div class="commit-dot"></div>
+            <div class="commit-line"></div>
+            <div class="commit-content">
+              <span class="commit-hash">a73c79f</span>
+              <span class="commit-msg">Add embedding context length setting with text chunking for embeddings</span>
+            </div>
+          </div>
+          <div class="commit-node">
+            <div class="commit-dot"></div>
+            <div class="commit-line"></div>
+            <div class="commit-content">
+              <span class="commit-hash">f7f2e3b</span>
+              <span class="commit-msg">Set memory health check batch size to 10</span>
+            </div>
+          </div>
+          <div class="commit-node">
+            <div class="commit-dot"></div>
+            <div class="commit-line"></div>
+            <div class="commit-content">
+              <span class="commit-hash">17770e5</span>
+              <span class="commit-msg">feat: add mobile endpoint with responsive UI</span>
+            </div>
+          </div>
+          <div class="commit-node">
+            <div class="commit-dot"></div>
+            <div class="commit-line"></div>
+            <div class="commit-content">
+              <span class="commit-hash">f745585</span>
+              <span class="commit-msg">feat: speed mode now answers directly without template structure</span>
+            </div>
+          </div>
+          <div class="commit-node">
+            <div class="commit-dot"></div>
+            <div class="commit-line"></div>
+            <div class="commit-content">
+              <span class="commit-hash">b4037cd</span>
+              <span class="commit-msg">feat: re-embed button with progress bar for mixed embeddings on analytics page</span>
+            </div>
+          </div>
+          <div class="commit-node">
+            <div class="commit-dot"></div>
+            <div class="commit-line"></div>
+            <div class="commit-content">
+              <span class="commit-hash">9224e2b</span>
+              <span class="commit-msg">feat: expose search & crawl as MCP server via /api/mcp</span>
+            </div>
+          </div>
+          <div class="commit-node">
+            <div class="commit-dot"></div>
+            <div class="commit-line"></div>
+            <div class="commit-content">
+              <span class="commit-hash">ecc5618</span>
+              <span class="commit-msg">feat: Obsidian-style knowledge graph + cluster labels infrastructure</span>
+            </div>
+          </div>
+          <div class="commit-node">
+            <div class="commit-dot"></div>
+            <div class="commit-line"></div>
+            <div class="commit-content">
+              <span class="commit-hash">aa24ff2</span>
+              <span class="commit-msg">feat: remove classifier LLM, expose sources in follow-up, fix mobile layout</span>
+            </div>
+          </div>
+          <div class="commit-node">
+            <div class="commit-dot"></div>
+            <div class="commit-line"></div>
+            <div class="commit-content">
+              <span class="commit-hash">c623992</span>
+              <span class="commit-msg">feat: add chat embeddings and analytics page</span>
+            </div>
+          </div>
+          <div class="commit-node">
+            <div class="commit-dot"></div>
+            <div class="commit-line"></div>
+            <div class="commit-content">
+              <span class="commit-hash">828cfa8</span>
+              <span class="commit-msg">feat: add @ reference system for chat relationships</span>
+            </div>
+          </div>
         </div>
 
-        <div class="changelog-group">
-          <h3 class="changelog-group-title">Knowledge & Analytics</h3>
-          <ul class="changelog-list">
-            <li><strong>Knowledge graph</strong> — Obsidian-style interactive graph with hierarchical clustering and LLM-generated topic labels.</li>
-            <li><strong>Chat embeddings & analytics</strong> — Semantic search across chat history with cluster visualization and embedding status tracking.</li>
-            <li><strong>@ chat references</strong> — Link chats to related conversations using <code>@</code> references.</li>
-          </ul>
-        </div>
+        <p class="commit-note">Showing the latest commits from the project's history. Full history on <a href="https://github.com/kspviswa/Uttaram/commits/main" target="_blank" rel="noopener noreferrer">GitHub →</a></p>
+      </div>
+    </section>
 
-        <div class="changelog-group">
-          <h3 class="changelog-group-title">Performance</h3>
-          <ul class="changelog-list">
-            <li><strong>Speed mode</strong> — Answers directly without template structure for faster responses.</li>
-            <li><strong>Classifier LLM removed</strong> — Eliminated an extra LLM call per query.</li>
-            <li><strong>LLM label caching</strong> — Cluster topic labels are cached to avoid redundant LLM calls.</li>
-            <li><strong>Memory health check batch size</strong> — Reduced to 10 memories per batch for more reliable processing.</li>
-            <li><strong>Text chunking for embeddings</strong> — Automatic chunking based on embedding model context length prevents errors with limited-context models.</li>
-          </ul>
-        </div>
-
-        <div class="changelog-group">
-          <h3 class="changelog-group-title">Mobile & UX</h3>
-          <ul class="changelog-list">
-            <li><strong>Mobile responsive UI</strong> — Full responsive layout with mobile-optimized settings and scrollable tab bars.</li>
-            <li><strong>Optimization popover positioning</strong> — Properly positioned on all screen sizes with mobile adjustments.</li>
-            <li><strong>Dismissable modals</strong> — Bottom-sheet modals for mobile optimization pickers.</li>
-          </ul>
+    <!-- About / Why I Built Uttaram -->
+    <section class="section" id="about">
+      <div class="section-inner">
+        <h2 class="section-title">Why I Built ऊttaram</h2>
+        <div class="about-grid">
+          <div class="about-card">
+            <h3 class="about-title">Personalization That Stays</h3>
+            <p class="about-desc">I wanted an AI that remembers me across sessions — my preferences, my projects, my context. But I didn't want that memory leaving my machine. Memories are extracted and stored locally, and a health-check routine keeps them clean.</p>
+          </div>
+          <div class="about-card">
+            <h3 class="about-title">Built on Vane</h3>
+            <p class="about-desc">ऊttaram is a fork of <a href="https://github.com/ItzCrazyKns/Vane" target="_blank" rel="noopener noreferrer">Vane</a> — an excellent privacy-focused AI answering engine. I forked it to add persistent personalization, project organization, pipeline tracking, and a full settings page, while keeping the core privacy-first philosophy intact.</p>
+          </div>
+          <div class="about-card">
+            <h3 class="about-title">Open Source by Default</h3>
+            <p class="about-desc">Everything is MIT licensed. No telemetry, no cloud dependencies, no hidden tracking. Run it on your hardware, connect your own LLM providers, and own your data completely.</p>
+          </div>
         </div>
       </div>
     </section>
@@ -286,9 +360,12 @@ POST /api/mcp/crawl</code></pre>
   <footer class="footer" role="contentinfo">
     <div class="footer-inner">
       <p class="footer-brand">◈ ऊttaram — Personal Curiosity Engine</p>
-      <p class="footer-desc">Privacy-focused AI answering engine. Runs on your own hardware.</p>
+      <p class="footer-desc">A fork of <a href="https://github.com/ItzCrazyKns/Vane" target="_blank" rel="noopener noreferrer">Vane</a>. Privacy-focused AI answering engine. Runs on your own hardware.</p>
       <div class="footer-links">
-        <a href="https://github.com/kspviswa/Uttaram" target="_blank" rel="noopener noreferrer">GitHub</a>
+        <a href="https://github.com/kspviswa/Uttaram" target="_blank" rel="noopener noreferrer">
+          <svg width="18" height="18" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"/></svg>
+          GitHub
+        </a>
         <a href="https://github.com/kspviswa/Uttaram/blob/main/LICENSE" target="_blank" rel="noopener noreferrer">MIT License</a>
       </div>
     </div>

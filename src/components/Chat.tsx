@@ -49,7 +49,7 @@ const Chat = () => {
     };
 
     if (messages.length === 1) {
-      document.title = `${messages[0].query.substring(0, 30)}  - Uttaram`;
+      document.title = `${messages[0].query.substring(0, 30)}  - ऊttaram - Personal Curiosity Engine`;
     }
 
     if (sections.length > lastScrolledRef.current) {

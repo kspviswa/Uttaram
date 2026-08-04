@@ -262,7 +262,7 @@ const loadMessages = async (
   console.debug(new Date(), 'app:messages_loaded');
 
   if (messages.length > 0) {
-    document.title = messages[0].query;
+    document.title = `${messages[0].query}  - ऊttaram - Personal Curiosity Engine`;
   }
 
   const files = (data.chat?.files || []).map((file: any) => {
@@ -623,7 +623,7 @@ export const ChatProvider = ({ children }: { children: React.ReactNode }) => {
       const mins = Math.floor(elapsed / 60);
       const secs = elapsed % 60;
       const timeStr = mins > 0 ? `${mins}m ${secs.toString().padStart(2, '0')}` : `${secs}s`;
-      document.title = `⏳ ${timeStr}  - Uttaram`;
+      document.title = `⏳ ${timeStr}  - ऊttaram - Personal Curiosity Engine`;
     }, 1000);
     return () => {
       clearInterval(id);
@@ -631,7 +631,7 @@ export const ChatProvider = ({ children }: { children: React.ReactNode }) => {
         const q = sections[0].message.query.length > 30
           ? sections[0].message.query.substring(0, 30).trim() + '...'
           : sections[0].message.query;
-        document.title = `${q}  - Uttaram`;
+        document.title = `${q}  - ऊttaram - Personal Curiosity Engine`;
       }
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -802,7 +802,7 @@ export const ChatProvider = ({ children }: { children: React.ReactNode }) => {
 
         if (typeof document !== 'undefined') {
           const q = message.query.length > 30 ? message.query.substring(0, 30).trim() + '...' : message.query;
-          document.title = `✓ ${q}  - Uttaram`;
+          document.title = `✓ ${q}  - ऊttaram - Personal Curiosity Engine`;
         }
 
         const lastMsg = messagesRef.current[messagesRef.current.length - 1];

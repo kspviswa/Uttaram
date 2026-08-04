@@ -776,36 +776,36 @@ pre {
 .install-card:nth-child(6),
 .api-card:nth-child(6) { animation-delay: 0.25s; }
 
-/* Fork Me Banner */
-.fork-me {
-  position: fixed;
-  top: 0;
-  right: 0;
-  z-index: 200;
-  background: #24a0ed;
-  color: #fff;
-  padding: 0.35rem 0.75rem;
-  font-size: 0.75rem;
-  font-weight: 600;
-  text-decoration: none;
-  border-radius: 0 0 var(--radius-sm) 0;
-  transition: background var(--transition-fast), transform var(--transition-fast);
-  box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+/* GitHub Button */
+.btn-github {
+  background: var(--bg-secondary);
+  color: var(--text-primary);
+  border: 1px solid var(--border-color);
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
 }
 
-.fork-me:hover {
-  background: var(--accent-hover);
-  transform: scale(1.05);
-  color: #fff;
+.btn-github:hover {
+  background: var(--bg-tertiary);
+  border-color: var(--accent);
+  color: var(--text-primary);
 }
 
-[data-theme="light"] .fork-me {
-  background: #0969da;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.12);
+/* Footer Author */
+.footer-author {
+  font-size: 0.85rem;
+  color: var(--text-muted);
+  margin-bottom: 0.5rem;
 }
 
-[data-theme="light"] .fork-me:hover {
-  background: #0550ae;
+.footer-author a {
+  color: var(--text-secondary);
+  font-weight: 500;
+}
+
+.footer-author a:hover {
+  color: var(--accent);
 }
 
 /* Hero Badges */

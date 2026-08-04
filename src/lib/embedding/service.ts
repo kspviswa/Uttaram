@@ -161,12 +161,9 @@ class EmbeddingService {
 
     const chunkEmbeddings = await model.embedText(flatTexts);
 
-    const result: number[][] = new Array(texts.length);
+    const result: number[][] = Array.from({ length: texts.length }, () => []);
     for (let i = 0; i < flatTexts.length; i++) {
       const originalIndex = textToChunkIndex[i];
-      if (!result[originalIndex]) {
-        result[originalIndex] = [];
-      }
       result[originalIndex].push(chunkEmbeddings[i]);
     }
 

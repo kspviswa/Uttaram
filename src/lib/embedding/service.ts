@@ -161,14 +161,17 @@ class EmbeddingService {
 
     const chunkEmbeddings = await model.embedText(flatTexts);
 
-    const result: number[][] = Array.from({ length: texts.length }, () => []);
+    const grouped: number[][][] = [];
+    for (let i = 0; i < texts.length; i++) {
+      grouped.push([]);
+    }
     for (let i = 0; i < flatTexts.length; i++) {
       const originalIndex = textToChunkIndex[i];
-      result[originalIndex].push(chunkEmbeddings[i]);
+      grouped[originalIndex].push(chunkEmbeddings[i] as number[]);
     }
 
-    return result.map((embeddings) => {
-      if (!embeddings || embeddings.length === 0) return [];
+    return grouped.map((embeddings) => {
+      if (embeddings.length === 0) return [];
       return averageEmbeddings(embeddings) ?? embeddings[0];
     });
   }

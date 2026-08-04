@@ -23,7 +23,8 @@ export async function PUT(req: NextRequest) {
 
     if (
       previous.embeddingModelProviderId !== data.embeddingModelProviderId ||
-      previous.embeddingModelKey !== data.embeddingModelKey
+      previous.embeddingModelKey !== data.embeddingModelKey ||
+      previous.embeddingContextLength !== data.embeddingContextLength
     ) {
       embeddingService.reset();
     }

@@ -3,6 +3,23 @@ import { chats, messages } from '@/lib/db/schema';
 import { eq, sql, and, isNull } from 'drizzle-orm';
 import ModelRegistry from '@/lib/models/registry';
 import { getAllSettings } from '@/lib/config/settings';
+import { splitTextForEmbedding } from '@/lib/utils/splitText';
+
+function averageEmbeddings(embeddings: number[][]): number[] | null {
+  if (embeddings.length === 0) return null;
+  if (embeddings.length === 1) return embeddings[0];
+  const dim = embeddings[0].length;
+  const avg = new Array(dim).fill(0);
+  for (const emb of embeddings) {
+    for (let i = 0; i < dim; i++) {
+      avg[i] += emb[i];
+    }
+  }
+  for (let i = 0; i < dim; i++) {
+    avg[i] /= embeddings.length;
+  }
+  return avg;
+}
 
 class EmbeddingService {
   private static instance: EmbeddingService | null = null;
@@ -110,7 +127,53 @@ class EmbeddingService {
       console.warn('[EmbeddingService] No embedding model available');
       return [];
     }
-    return model.embedText(texts);
+
+    if (texts.length === 0) {
+      return [];
+    }
+
+    const settings = await getAllSettings();
+    const embeddingContextLength = parseInt(
+      settings.embeddingContextLength || '2048',
+      10,
+    );
+
+    const allChunkedTexts: string[][] = [];
+    const flatTexts: string[] = [];
+    const textToChunkIndex: number[] = [];
+
+    for (let i = 0; i < texts.length; i++) {
+      const chunks = splitTextForEmbedding(
+        texts[i],
+        embeddingContextLength,
+        0.1,
+      );
+      allChunkedTexts.push(chunks);
+      for (const chunk of chunks) {
+        textToChunkIndex.push(i);
+        flatTexts.push(chunk);
+      }
+    }
+
+    if (flatTexts.length === 0) {
+      return texts.map(() => []);
+    }
+
+    const chunkEmbeddings = await model.embedText(flatTexts);
+
+    const result: number[][] = new Array(texts.length);
+    for (let i = 0; i < flatTexts.length; i++) {
+      const originalIndex = textToChunkIndex[i];
+      if (!result[originalIndex]) {
+        result[originalIndex] = [];
+      }
+      result[originalIndex].push(chunkEmbeddings[i]);
+    }
+
+    return result.map((embeddings) => {
+      if (!embeddings || embeddings.length === 0) return [];
+      return averageEmbeddings(embeddings) ?? embeddings[0];
+    });
   }
 
   async embedChat(chatId: string): Promise<boolean> {
@@ -124,7 +187,7 @@ class EmbeddingService {
     if (!chat || chat.embedding) return true;
 
     try {
-      const [embedding] = await model.embedText([chat.title]);
+      const [embedding] = await this.embedText([chat.title]);
       await db
         .update(chats)
         .set({ embedding: JSON.stringify(embedding) })
@@ -147,7 +210,7 @@ class EmbeddingService {
     if (!message || message.embedding) return true;
 
     try {
-      const [embedding] = await model.embedText([message.query]);
+      const [embedding] = await this.embedText([message.query]);
       await db
         .update(messages)
         .set({ embedding: JSON.stringify(embedding) })
@@ -180,7 +243,7 @@ class EmbeddingService {
 
     for (const chat of unembeddedChats) {
       try {
-        const [embedding] = await model.embedText([chat.title]);
+        const [embedding] = await this.embedText([chat.title]);
         await db
           .update(chats)
           .set({ embedding: JSON.stringify(embedding) })
@@ -219,7 +282,7 @@ class EmbeddingService {
 
     for (const message of unembeddedMessages) {
       try {
-        const [embedding] = await model.embedText([message.query]);
+        const [embedding] = await this.embedText([message.query]);
         await db
           .update(messages)
           .set({ embedding: JSON.stringify(embedding) })
@@ -271,7 +334,7 @@ class EmbeddingService {
     for (let i = 0; i < allChats.length; i++) {
       const chat = allChats[i];
       try {
-        const [embedding] = await model.embedText([chat.title]);
+        const [embedding] = await this.embedText([chat.title]);
         await db
           .update(chats)
           .set({ embedding: JSON.stringify(embedding) })
@@ -312,7 +375,7 @@ class EmbeddingService {
     for (let i = 0; i < allMessages.length; i++) {
       const message = allMessages[i];
       try {
-        const [embedding] = await model.embedText([message.query]);
+        const [embedding] = await this.embedText([message.query]);
         await db
           .update(messages)
           .set({ embedding: JSON.stringify(embedding) })

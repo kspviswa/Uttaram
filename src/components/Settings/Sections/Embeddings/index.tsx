@@ -3,6 +3,7 @@
 import { Database, RefreshCw, CheckCircle2, XCircle } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { toast } from 'sonner';
+import EmbeddingContextLengthSelect from '@/components/Settings/Sections/Models/EmbeddingContextLengthSelect';
 
 interface EmbeddingStats {
   chats: {
@@ -83,6 +84,8 @@ export default function EmbeddingsSection() {
           messages are automatically embedded.
         </p>
       </div>
+
+      <EmbeddingContextLengthSelect />
 
       {stats && (
         <div className="grid grid-cols-2 gap-4">

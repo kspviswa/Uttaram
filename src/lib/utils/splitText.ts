@@ -12,6 +12,49 @@ export const getTokenCount = (text: string): number => {
   }
 };
 
+export const splitTextForEmbedding = (
+  text: string,
+  maxTokens: number,
+  overlapRatio = 0.1,
+): string[] => {
+  const maxChars = maxTokens * 4;
+  const overlapChars = Math.round(maxChars * overlapRatio);
+
+  if (text.length <= maxChars) {
+    return [text];
+  }
+
+  const result: string[] = [];
+  let chunkStart = 0;
+
+  while (chunkStart < text.length) {
+    let chunkEnd = chunkStart + maxChars;
+
+    if (chunkEnd >= text.length) {
+      result.push(text.slice(chunkStart));
+      break;
+    }
+
+    let splitPoint = chunkEnd;
+    while (splitPoint > chunkStart && text[splitPoint] !== ' ' && text[splitPoint] !== '\n') {
+      splitPoint--;
+    }
+
+    if (splitPoint <= chunkStart) {
+      splitPoint = chunkEnd;
+    }
+
+    result.push(text.slice(chunkStart, splitPoint));
+    chunkStart = splitPoint - overlapChars;
+
+    if (chunkStart < 0) {
+      chunkStart = 0;
+    }
+  }
+
+  return result;
+};
+
 export const splitText = (
   text: string,
   maxTokens = 512,

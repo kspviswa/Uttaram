@@ -4,6 +4,24 @@ import { and, eq, like, desc, sql, notInArray } from 'drizzle-orm';
 import BaseEmbedding from '@/lib/models/base/embedding';
 import computeSimilarity from '@/lib/utils/computeSimilarity';
 import { Memory, MemoryCategory, MemoryInput } from './types';
+import { getAllSettings } from '@/lib/config/settings';
+import { splitTextForEmbedding } from '@/lib/utils/splitText';
+
+function averageEmbeddings(embeddings: number[][]): number[] | null {
+  if (embeddings.length === 0) return null;
+  if (embeddings.length === 1) return embeddings[0];
+  const dim = embeddings[0].length;
+  const avg = new Array(dim).fill(0);
+  for (const emb of embeddings) {
+    for (let i = 0; i < dim; i++) {
+      avg[i] += emb[i];
+    }
+  }
+  for (let i = 0; i < dim; i++) {
+    avg[i] /= embeddings.length;
+  }
+  return avg;
+}
 
 class MemoryStore {
   private embeddingModel: BaseEmbedding<any> | null = null;
@@ -19,8 +37,19 @@ class MemoryStore {
     let embedding: string | null = null;
     if (this.embeddingModel) {
       try {
-        const [emb] = await this.embeddingModel.embedText([input.content]);
-        embedding = JSON.stringify(emb);
+        const settings = await getAllSettings();
+        const embeddingContextLength = parseInt(
+          settings.embeddingContextLength || '2048',
+          10,
+        );
+        const chunks = splitTextForEmbedding(
+          input.content,
+          embeddingContextLength,
+          0.1,
+        );
+        const chunkEmbeddings = await this.embeddingModel.embedText(chunks);
+        const embeddings = chunkEmbeddings.filter((e) => e.length > 0);
+        embedding = JSON.stringify(averageEmbeddings(embeddings));
       } catch {
         // Silently skip embedding generation
       }
@@ -85,8 +114,19 @@ class MemoryStore {
     let embedding = existing.embedding;
     if (updates.content && this.embeddingModel) {
       try {
-        const [emb] = await this.embeddingModel.embedText([newContent]);
-        embedding = JSON.stringify(emb);
+        const settings = await getAllSettings();
+        const embeddingContextLength = parseInt(
+          settings.embeddingContextLength || '2048',
+          10,
+        );
+        const chunks = splitTextForEmbedding(
+          newContent,
+          embeddingContextLength,
+          0.1,
+        );
+        const chunkEmbeddings = await this.embeddingModel.embedText(chunks);
+        const embeddings = chunkEmbeddings.filter((e) => e.length > 0);
+        embedding = JSON.stringify(averageEmbeddings(embeddings));
       } catch {
         // keep old embedding
       }
@@ -134,7 +174,21 @@ class MemoryStore {
 
     if (allMemories.length === 0) return [];
 
-    const [queryEmbedding] = await this.embeddingModel.embedText([query]);
+    const settings = await getAllSettings();
+    const embeddingContextLength = parseInt(
+      settings.embeddingContextLength || '2048',
+      10,
+    );
+    const chunks = splitTextForEmbedding(
+      query,
+      embeddingContextLength,
+      0.1,
+    );
+    const chunkEmbeddings = await this.embeddingModel.embedText(chunks);
+    const embeddings = chunkEmbeddings.filter((e) => e.length > 0);
+    const queryEmbedding = averageEmbeddings(embeddings);
+
+    if (!queryEmbedding) return [];
 
     const scored: { memory: Memory; score: number }[] = [];
 

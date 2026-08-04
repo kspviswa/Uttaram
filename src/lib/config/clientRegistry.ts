@@ -45,3 +45,6 @@ export const getThrottleEnabled = () =>
 
 export const getMaxParallelLlmCalls = () =>
   parseInt(getClientConfig('maxParallelLlmCalls', '2'), 10);
+
+export const getEmbeddingContextLength = () =>
+  parseInt(getClientConfig('embeddingContextLength', '2048'), 10);

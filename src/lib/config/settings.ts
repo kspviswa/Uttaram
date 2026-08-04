@@ -22,6 +22,7 @@ const DEFAULT_SETTINGS: Record<string, any> = {
   analyticsLlmProviderId: '',
   analyticsLlmKey: '',
   contextLength: '8192',
+  embeddingContextLength: '2048',
   throttleEnabled: false,
   maxParallelLlmCalls: 2,
   similarityThreshold: 0.15,

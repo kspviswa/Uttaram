@@ -3,7 +3,7 @@ import { Metadata } from 'next';
 
 export const metadata: Metadata = {
   title: 'ऊttaram - Personal Curiosity Engine',
-  description: 'Chat with the internet, chat with ऊttaram.',
+  description: 'Curiosity should be personal',
 };
 
 const Home = () => {

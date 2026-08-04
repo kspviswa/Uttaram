@@ -93,7 +93,7 @@ export async function POST() {
       });
     }
 
-    const BATCH_SIZE = 50;
+    const BATCH_SIZE = 10;
     let totalDeleted = 0;
     let totalUpdated = 0;
     const allDetails: { id: string; type: string; reason: string }[] = [];
